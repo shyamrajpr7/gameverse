@@ -669,26 +669,29 @@ class _TaskCardState extends State<_TaskCard> {
             ? (Matrix4.identity()..setTranslationRaw(100.0, 0.0, 0.0))
             : Matrix4.identity(),
         margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: _cardBg,
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          border: Border(
-            left: BorderSide(color: widget.accentColor, width: 3),
-            bottom: BorderSide(color: widget.accentColor.withValues(alpha: 0.15)),
-            right: BorderSide(color: widget.accentColor.withValues(alpha: 0.08)),
-            top: BorderSide(color: widget.accentColor.withValues(alpha: 0.08)),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: widget.accentColor.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+          child: Container(
+            decoration: BoxDecoration(
+              color: _cardBg,
+              border: Border(
+                left: BorderSide(color: widget.accentColor, width: 3),
+                bottom: BorderSide(color: widget.accentColor.withValues(alpha: 0.15)),
+                right: BorderSide(color: widget.accentColor.withValues(alpha: 0.08)),
+                top: BorderSide(color: widget.accentColor.withValues(alpha: 0.08)),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.accentColor.withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: widget.onToggle,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onToggle,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
@@ -768,6 +771,9 @@ class _TaskCardState extends State<_TaskCard> {
             ),
           ),
         ),
+      ),
+      ),
+      ),
       ),
     );
   }
