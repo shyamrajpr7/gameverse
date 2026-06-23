@@ -3,7 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'services/notification_service.dart';
+import 'services/gamification_service.dart';
 import 'screens/focus_page.dart';
+import 'screens/achievements_page.dart';
 
 class Task {
   final String id;
@@ -47,12 +49,14 @@ const Color _red = Color(0xFFEF4444);
 const Color _violet = Color(0xFF8B5CF6);
 const Color _cyan = Color(0xFF06B6D4);
 const Color _emerald = Color(0xFF10B981);
+const Color _amber = Color(0xFFF59E0B);
 const Color _slateText = Color(0xFF94A3B8);
 const Color _whiteText = Color(0xFFF1F5F9);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
+  await GamificationService().load();
   runApp(const TaskMasterApp());
 }
 
@@ -96,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: const [
           DashboardPage(),
           FocusPage(),
+          AchievementsPage(),
         ],
       ),
       bottomNavigationBar: Container(
@@ -123,6 +128,11 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icon(Icons.timer_outlined),
               activeIcon: Icon(Icons.timer_rounded),
               label: 'Focus',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.emoji_events_outlined),
+              activeIcon: Icon(Icons.emoji_events_rounded),
+              label: 'Achievements',
             ),
           ],
         ),
@@ -211,7 +221,8 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  void _toggleTask(Task task) {
+  Future<void> _toggleTask(Task task) async {
+    final wasCompleted = task.isCompleted;
     setState(() => task.isCompleted = !task.isCompleted);
     _saveTasks();
     if (task.isCompleted && task.reminderTime != null) {
@@ -220,6 +231,139 @@ class _DashboardPageState extends State<DashboardPage> {
     if (task.isCompleted == false && task.reminderTime != null) {
       _scheduleReminder(task);
     }
+
+    final gamification = GamificationService();
+    if (task.isCompleted && !wasCompleted) {
+      final xpGain = task.isHighPriority ? 25 : 10;
+      final result = await gamification.addXP(xpGain);
+      await gamification.incrementTasksCompleted();
+      _showXpSnackBar(xpGain, task.isHighPriority);
+      if (result.badge != null) {
+        _showAchievementBadgeDialog(result.badge!);
+      } else if (result.leveledUp) {
+        _showLevelUpDialog(result.newLevel!);
+      }
+    } else if (!task.isCompleted && wasCompleted) {
+      final xpLoss = task.isHighPriority ? 25 : 10;
+      gamification.currentXP = (gamification.currentXP - xpLoss).clamp(0, gamification.currentXP);
+      await gamification.decrementTasksCompleted();
+    }
+  }
+
+  void _showXpSnackBar(int xp, bool highPriority) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.stars_rounded, color: _amber, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              '+$xp XP${highPriority ? ' (High Priority bonus!)' : ''}',
+              style: const TextStyle(fontWeight: FontWeight.w700, color: _whiteText),
+            ),
+          ],
+        ),
+        backgroundColor: _cardBg,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showAchievementBadgeDialog(AchievementBadge badge) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: _amber.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(badge.icon, size: 32, color: _amber),
+            ),
+            const SizedBox(height: 16),
+            const Text('🏆 Badge Unlocked!',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _whiteText)),
+            const SizedBox(height: 8),
+            Text(badge.title,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _violet)),
+            const SizedBox(height: 4),
+            Text(badge.description,
+                style: const TextStyle(fontSize: 13, color: _slateText)),
+          ],
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _violet,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Awesome!'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLevelUpDialog(int newLevel) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_violet, _violet.withValues(alpha: 0.6)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Center(
+                child: Text('↑', style: TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.w800)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Level Up!',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _whiteText)),
+            const SizedBox(height: 8),
+            Text('You reached Level $newLevel',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _violet)),
+          ],
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _violet,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Keep Going!'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _deleteTask(Task task) {

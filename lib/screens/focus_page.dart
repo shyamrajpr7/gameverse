@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/notification_service.dart';
+import '../services/gamification_service.dart';
 
 const Color _cardBg = Color(0xFF1E293B);
 const Color _violet = Color(0xFF8B5CF6);
 const Color _emerald = Color(0xFF10B981);
 const Color _red = Color(0xFFEF4444);
+const Color _rose = Color(0xFFF43F5E);
 const Color _cyan = Color(0xFF06B6D4);
 const Color _amber = Color(0xFFF59E0B);
 const Color _slateText = Color(0xFF94A3B8);
@@ -64,6 +66,8 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   bool _isRunning = false;
   bool _isBreak = false;
   int _focusStreak = 0;
+  bool _strictMode = false;
+  bool _treeDead = false;
 
   List<FocusSession> _sessions = [];
   List<Map<String, dynamic>> _availableTasks = [];
@@ -101,7 +105,11 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused && _isRunning) {
-      _pauseTimer();
+      if (_strictMode && !_isBreak) {
+        _killTree();
+      } else {
+        _pauseTimer();
+      }
     }
   }
 
@@ -159,7 +167,34 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
 
   void _pauseTimer() {
     _timer?.cancel();
+    if (_strictMode && !_isBreak && !_treeDead) {
+      _killTree();
+      return;
+    }
     setState(() => _isRunning = false);
+  }
+
+  void _killTree() {
+    _timer?.cancel();
+    setState(() {
+      _isRunning = false;
+      _treeDead = true;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.mood_bad_rounded, color: _rose, size: 20),
+            SizedBox(width: 8),
+            Text('Strict mode: tree withered. No XP awarded.',
+                style: TextStyle(color: _whiteText, fontWeight: FontWeight.w600)),
+          ],
+        ),
+        backgroundColor: _cardBg,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    );
   }
 
   String get _phaseLabel => _isBreak ? 'Break' : 'Focus';
@@ -171,6 +206,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     setState(() {
       _isRunning = false;
       _isBreak = false;
+      _treeDead = false;
       _remainingSeconds = _focusDuration;
     });
   }
@@ -182,6 +218,11 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
     if (_isBreak) {
       _showBreakCompleteDialog();
     } else {
+      if (_treeDead) {
+        setState(() => _treeDead = false);
+        _resetTimer();
+        return;
+      }
       final session = FocusSession(
         taskTitle: _selectedTaskTitle ?? 'Focus Session',
         taskId: _selectedTaskId,
@@ -191,6 +232,11 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
       _sessions.insert(0, session);
       _saveSessions();
       _focusStreak++;
+
+      final xpGain = _focusDuration ~/ 60;
+      GamificationService().addXP(xpGain);
+      GamificationService().incrementFocusSessions();
+
       NotificationService().show(
         id: DateTime.now().millisecondsSinceEpoch & 0x7FFFFFFF,
         title: '🎉 Focus Complete!',
@@ -203,6 +249,7 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   }
 
   void _showSessionCompleteDialog() {
+    final xpGained = _focusDuration ~/ 60;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -222,6 +269,24 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
               ),
             Text('${_formatTime(_focusDuration)} focused',
                 style: const TextStyle(color: _slateText, fontSize: 15)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _amber.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.stars_rounded, size: 16, color: _amber),
+                  const SizedBox(width: 6),
+                  Text('+$xpGained XP',
+                      style: const TextStyle(
+                          color: _amber, fontWeight: FontWeight.w700, fontSize: 14)),
+                ],
+              ),
+            ),
             if (_focusStreak > 1)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -356,6 +421,8 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
             _buildTimerCircle(),
             const SizedBox(height: 20),
             _buildDurationChips(),
+            const SizedBox(height: 12),
+            _buildStrictModeToggle(),
             const SizedBox(height: 24),
             _buildTaskSelector(),
             const SizedBox(height: 24),
@@ -417,30 +484,64 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
   }
 
   Widget _buildTimerCircle() {
+    final treeStage = _getTreeStage();
+    final treeIcon = treeStage['icon'] as IconData;
+    final treeSize = treeStage['size'] as double;
+    final treeColor = treeStage['color'] as Color;
+    final treeLabel = treeStage['label'] as String;
+
     return Center(
       child: SizedBox(
         width: 220,
-        height: 220,
+        height: 260,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            CircularProgressIndicator(
-              value: _progress,
-              strokeWidth: 8,
-              strokeCap: StrokeCap.round,
-              backgroundColor: _slateText.withValues(alpha: 0.1),
-              valueColor: AlwaysStoppedAnimation(_phaseColor),
-            ),
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                SizedBox(
+                  width: 180,
+                  height: 180,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: _treeDead ? 0.0 : _progress,
+                        strokeWidth: 8,
+                        strokeCap: StrokeCap.round,
+                        backgroundColor: _slateText.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation(
+                          _treeDead ? _rose : _phaseColor,
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(treeIcon, size: treeSize, color: treeColor),
+                          const SizedBox(height: 6),
+                          Text(
+                            _formatTime(_remainingSeconds),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: _whiteText,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Text(
-                  _formatTime(_remainingSeconds),
-                  style: const TextStyle(
-                    fontSize: 52,
-                    fontWeight: FontWeight.w800,
-                    color: _whiteText,
-                    fontFeatures: [FontFeature.tabularFigures()],
+                  _treeDead ? 'Withered' : treeLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _treeDead ? _rose : _slateText,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -452,33 +553,135 @@ class _FocusPageState extends State<FocusPage> with WidgetsBindingObserver {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    _phaseLabel,
+                    _treeDead ? 'Failed' : _phaseLabel,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: _phaseColor,
+                      color: _treeDead ? _rose : _phaseColor,
                       letterSpacing: 1.2,
                     ),
                   ),
                 ),
-                if (_isRunning || (!_isRunning && _remainingSeconds < (_isBreak ? _breakDuration : _focusDuration)))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      _isRunning ? '● Running' : '● Paused',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: _isRunning ? _emerald : _amber,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildStrictModeToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _strictMode
+              ? _rose.withValues(alpha: 0.3)
+              : _slateText.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _strictMode ? Icons.lock_rounded : Icons.lock_open_rounded,
+            size: 16,
+            color: _strictMode ? _rose : _slateText.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Strict Mode',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _strictMode ? _whiteText : _slateText,
+                  ),
+                ),
+                Text(
+                  _strictMode
+                      ? 'Pausing kills the tree & forfeits XP'
+                      : 'Stay focused or lose progress',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: _slateText.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _strictMode,
+            onChanged: (val) {
+              if (_isRunning) return;
+              setState(() => _strictMode = val);
+            },
+            activeThumbColor: _rose,
+            activeTrackColor: _rose.withValues(alpha: 0.3),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getTreeStage() {
+    if (_treeDead) {
+      return {
+        'icon': Icons.mood_bad_rounded,
+        'size': 36.0,
+        'color': _rose.withValues(alpha: 0.6),
+        'label': 'Tree withered',
+      };
+    }
+    if (!_isRunning && !_isBreak && _remainingSeconds == _focusDuration) {
+      return {
+        'icon': Icons.eco,
+        'size': 30.0,
+        'color': _slateText.withValues(alpha: 0.4),
+        'label': 'Plant a seed',
+      };
+    }
+    if (_isBreak) {
+      return {
+        'icon': Icons.nightlight_round,
+        'size': 34.0,
+        'color': _emerald.withValues(alpha: 0.6),
+        'label': 'Resting...',
+      };
+    }
+    final p = _progress;
+    if (p < 0.33) {
+      return {
+        'icon': Icons.eco,
+        'size': 32.0,
+        'color': _emerald.withValues(alpha: 0.7),
+        'label': 'Sprouting...',
+      };
+    } else if (p < 0.66) {
+      return {
+        'icon': Icons.forest,
+        'size': 38.0,
+        'color': _emerald,
+        'label': 'Growing...',
+      };
+    } else if (p < 1.0) {
+      return {
+        'icon': Icons.forest,
+        'size': 44.0,
+        'color': _emerald.withValues(alpha: 0.9),
+        'label': 'Almost there!',
+      };
+    }
+    return {
+      'icon': Icons.auto_awesome,
+      'size': 44.0,
+      'color': _amber,
+      'label': 'Full Bloom!',
+    };
   }
 
   Widget _buildDurationChips() {
