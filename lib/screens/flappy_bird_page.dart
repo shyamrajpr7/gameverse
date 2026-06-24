@@ -16,7 +16,7 @@ class FlappyBirdPage extends StatefulWidget {
 }
 
 class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProviderStateMixin {
-  late AnimationController _gameController;
+  late final Ticker _ticker;
   
   double birdY = 0;
   double birdVelocity = 0;
@@ -35,26 +35,23 @@ class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _gameController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 16), // roughly 60fps
-    )..addListener(_gameLoop);
+    _ticker = createTicker(_onTick);
   }
 
-  void _gameLoop() {
-    if (gameOver) return;
+  void _onTick(Duration elapsed) {
+    if (gameOver || !gameStarted) return;
 
     setState(() {
       birdVelocity += gravity;
       birdY -= birdVelocity * 0.1;
 
-      pipeX -= 0.025; // pipe speed
+      pipeX -= 0.025;
 
       if (pipeX < -1.5) {
         pipeX = 1.5;
         pipeGapHeight = -0.4 + (Random().nextDouble() * 0.8);
         score++;
-        GamificationService().addXP(5); // 5 XP per pipe
+        GamificationService().addXP(5);
       }
 
       if (_checkCollision()) {
@@ -65,19 +62,13 @@ class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProvid
         _gameOver();
       }
     });
-
-    if (!gameOver) {
-      _gameController.forward(from: 0);
-    }
   }
 
   bool _checkCollision() {
     const double birdRadiusX = 0.1;
     const double birdRadiusY = 0.05;
     
-    // Check horizontal overlap
     if (pipeX < birdRadiusX && pipeX + pipeWidth > -birdRadiusX) {
-      // Check vertical overlap with gap
       double gapTop = pipeGapHeight - gapSize / 2;
       double gapBottom = pipeGapHeight + gapSize / 2;
       
@@ -103,7 +94,7 @@ class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProvid
 
     if (!gameStarted) {
       setState(() => gameStarted = true);
-      _gameController.forward(from: 0);
+      _ticker.start();
     }
 
     setState(() {
@@ -113,12 +104,12 @@ class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProvid
 
   void _gameOver() {
     gameOver = true;
-    _gameController.stop();
+    _ticker.stop();
   }
 
   @override
   void dispose() {
-    _gameController.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
@@ -198,7 +189,7 @@ class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProvid
                         color: _whiteText,
                       ),
                     ),
-                    const SizedBox(width: 48), // balance for back button
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
