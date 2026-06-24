@@ -374,7 +374,27 @@ class _HubPageState extends State<HubPage> {
     _saveDocuments();
   }
 
-  void _deleteDocument(AppDocument doc) {
+  Future<void> _deleteDocument(AppDocument doc) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete Note', style: TextStyle(color: _whiteText, fontWeight: FontWeight.w700)),
+        content: const Text('Are you sure you want to delete this note?', style: TextStyle(color: _slateText)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: _slateText)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: _rose, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
     setState(() => _documents.removeWhere((d) => d.id == doc.id));
     _saveDocuments();
     if (doc.filePath != null) {
@@ -486,12 +506,15 @@ class _HubPageState extends State<HubPage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddOptions,
-        backgroundColor: _accentColor,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        child: const Icon(Icons.add_rounded, size: 28),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 96),
+        child: FloatingActionButton(
+          onPressed: _showAddOptions,
+          backgroundColor: _accentColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          child: const Icon(Icons.add_rounded, size: 28),
+        ),
       ),
     );
   }
