@@ -120,6 +120,7 @@ class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProvid
       backgroundColor: _bgCanvas,
       body: GestureDetector(
         onTap: _jump,
+        behavior: HitTestBehavior.opaque,
         child: Stack(
           children: [
             // Bird
