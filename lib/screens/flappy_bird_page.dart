@@ -46,7 +46,7 @@ class _FlappyBirdPageState extends State<FlappyBirdPage> with SingleTickerProvid
       birdVelocity += gravity;
       birdY -= birdVelocity * 0.1;
 
-      pipeX -= 0.025;
+      pipeX -= 0.015;
 
       if (pipeX < -1.5) {
         pipeX = 1.5;
