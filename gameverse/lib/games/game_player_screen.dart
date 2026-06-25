@@ -12,6 +12,7 @@ import 'farm_life_game.dart';
 import 'build_world_game.dart';
 import 'pixel_battle_game.dart';
 import 'classic_snake_game.dart';
+import '../widgets/achievement_overlay.dart';
 
 class GamePlayerScreen extends StatefulWidget {
   final Game game;
@@ -52,40 +53,13 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
     final badge = await _gameService.addXP(widget.game.xpReward + (finalScore ~/ 10));
     if (badge != null && mounted) {
       final badgeData = allBadges.firstWhere((b) => b.id == badge);
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🏆', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 12),
-              const Text('Badge Unlocked!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 8),
-              Icon(badgeData.icon, size: 48, color: const Color(0xFFFFD700)),
-              const SizedBox(height: 8),
-              Text(badgeData.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFFFD700))),
-              Text(badgeData.description, style: const TextStyle(color: Colors.white60)),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFD700),
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text('Awesome!', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
+      Navigator.of(context).push(PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (_, _, _) => AchievementOverlay(
+          badge: badgeData,
+          onDismiss: () => Navigator.of(context).pop(),
         ),
-      );
+      ));
     }
   }
 

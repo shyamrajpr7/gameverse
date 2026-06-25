@@ -5,6 +5,7 @@ import '../widgets/game_card.dart';
 import 'game_detail_screen.dart';
 import 'games_list_screen.dart';
 import 'profile_screen.dart';
+import 'leaderboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -243,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildNavItem(Icons.grid_view, 'Games', false, () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const GamesListScreen()));
               }),
-              _buildNavItem(Icons.leaderboard, 'Leaderboard', false, () {}),
+              _buildNavItem(Icons.leaderboard, 'Leaderboard', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()))),
               _buildNavItem(Icons.person, 'Profile', false, () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
               }),
