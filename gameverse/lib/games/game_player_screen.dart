@@ -11,6 +11,7 @@ import 'ocean_explorer_game.dart';
 import 'farm_life_game.dart';
 import 'build_world_game.dart';
 import 'pixel_battle_game.dart';
+import 'classic_snake_game.dart';
 
 class GamePlayerScreen extends StatefulWidget {
   final Game game;
@@ -282,6 +283,12 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
         );
       case 'build_world':
         return BuildWorldGame(
+          gameColor: widget.game.color,
+          onScoreChanged: _onScoreChanged,
+          onGameOver: _onGameOver,
+        );
+      case 'classic_snake':
+        return ClassicSnakeGame(
           gameColor: widget.game.color,
           onScoreChanged: _onScoreChanged,
           onGameOver: _onGameOver,

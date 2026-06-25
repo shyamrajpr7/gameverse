@@ -21,7 +21,7 @@ class GameBadge {
 const List<GameBadge> allBadges = [
   GameBadge(id: 'first_game', title: 'First Play', description: 'Play your first game', icon: Icons.play_circle),
   GameBadge(id: 'five_games', title: 'Gamer', description: 'Play 5 different games', icon: Icons.games),
-  GameBadge(id: 'all_games', title: 'Game Master', description: 'Play all 10 games', icon: Icons.workspace_premium),
+  GameBadge(id: 'all_games', title: 'Game Master', description: 'Play every game', icon: Icons.workspace_premium),
   GameBadge(id: 'high_score', title: 'High Scorer', description: 'Score 1000+ in any game', icon: Icons.emoji_events),
   GameBadge(id: 'level_5', title: 'Rising Star', description: 'Reach level 5', icon: Icons.trending_up),
   GameBadge(id: 'level_10', title: 'Game Legend', description: 'Reach level 10', icon: Icons.military_tech),

@@ -184,4 +184,17 @@ const List<Game> allGames = [
     ratingCount: 2567,
     xpReward: 55,
   ),
+  Game(
+    id: 'classic_snake',
+    title: 'Classic Snake',
+    description: 'Guide the snake to eat food and grow longer without crashing into walls or yourself. How long can you survive?',
+    categoryId: 'puzzle',
+    color: Color(0xFF00B894),
+    icon: Icons.catching_pokemon,
+    playerCount: 6543,
+    visits: 234567,
+    rating: 4.6,
+    ratingCount: 3123,
+    xpReward: 60,
+  ),
 ];
