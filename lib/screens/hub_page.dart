@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/gamification_service.dart';
 import 'flappy_bird_page.dart';
+import 'snake_game_page.dart';
 
 const Color _cardBg = Color(0xFF1E293B);
 const Color _violet = Color(0xFF8B5CF6);
@@ -721,40 +722,103 @@ class _HubPageState extends State<HubPage> {
   }
 
   Widget _buildMiniGamesCard() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (ctx) => const FlappyBirdPage()));
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _violet.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _violet.withValues(alpha: 0.3)),
-        ),
-        child: Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _violet.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
+                color: _violet.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.videogame_asset_rounded, color: _violet, size: 28),
+              child: const Icon(Icons.sports_esports_rounded, size: 16, color: _violet),
             ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Mini-Games', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _whiteText)),
-                  SizedBox(height: 4),
-                  Text('Play Flappy Bird to earn XP!', style: TextStyle(fontSize: 12, color: _slateText)),
-                ],
+            const SizedBox(width: 10),
+            const Text('Mini-Games',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _whiteText)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 140,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildGameCard(
+                title: 'Flappy Bird',
+                subtitle: 'Tap to fly & earn XP',
+                icon: Icons.videogame_asset_rounded,
+                color: _amber,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => const FlappyBirdPage())),
               ),
+              const SizedBox(width: 12),
+              _buildGameCard(
+                title: 'Neon Snake',
+                subtitle: 'Classic snake with a neon twist',
+                icon: Icons.gesture_rounded,
+                color: _cyan,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => const SnakeGamePage())),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGameCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 240,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 10,
+              spreadRadius: 2,
             ),
-            const Icon(Icons.chevron_right_rounded, color: _slateText),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const Spacer(),
+                Icon(Icons.arrow_forward_ios_rounded, color: color.withValues(alpha: 0.5), size: 14),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _whiteText),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 12, color: _slateText.withValues(alpha: 0.8)),
+            ),
           ],
         ),
       ),
