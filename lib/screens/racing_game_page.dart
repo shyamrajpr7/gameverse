@@ -192,7 +192,21 @@ class _RacingGamePageState extends State<RacingGamePage> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            _moveLeft();
+            return KeyEventResult.handled;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            _moveRight();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
       backgroundColor: _bgDeep,
       body: GestureDetector(
         onHorizontalDragEnd: _handleSwipe,
@@ -286,7 +300,7 @@ class _RacingGamePageState extends State<RacingGamePage> with TickerProviderStat
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildPlayerCar() {
