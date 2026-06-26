@@ -37,6 +37,8 @@ class _PuzzleQuestGameState extends State<PuzzleQuestGame> {
     const Color(0xFF6C5CE7),
     const Color(0xFFFF8A5C),
     const Color(0xFF45B7D1),
+    const Color(0xFFA8E6CF),
+    const Color(0xFFFF4081),
   ];
 
   @override
