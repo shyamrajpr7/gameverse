@@ -39,6 +39,8 @@ class GameService {
   static const String _playedGamesKey = 'gameverse_played';
   static const String _onboardingKey = 'gameverse_onboarding_seen';
   static const String _dailyDateKey = 'gameverse_daily_date';
+  static const String _usernameKey = 'gameverse_username';
+  static const String _avatarIndexKey = 'gameverse_avatar';
 
   int currentXP = 0;
   List<String> unlockedBadges = [];
@@ -46,6 +48,9 @@ class GameService {
   List<String> playedGames = [];
   bool hasSeenOnboarding = false;
   String? _lastDailyDate;
+
+  String username = 'Player';
+  int avatarIndex = 0;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -65,6 +70,8 @@ class GameService {
     }
     hasSeenOnboarding = prefs.getBool(_onboardingKey) ?? false;
     _lastDailyDate = prefs.getString(_dailyDateKey);
+    username = prefs.getString(_usernameKey) ?? 'Player';
+    avatarIndex = prefs.getInt(_avatarIndexKey) ?? 0;
   }
 
   Future<void> _save() async {
@@ -75,6 +82,18 @@ class GameService {
     await prefs.setString(_playedGamesKey, jsonEncode(playedGames));
     await prefs.setBool(_onboardingKey, hasSeenOnboarding);
     await prefs.setString(_dailyDateKey, _lastDailyDate ?? '');
+    await prefs.setString(_usernameKey, username);
+    await prefs.setInt(_avatarIndexKey, avatarIndex);
+  }
+
+  Future<void> updateUsername(String name) async {
+    username = name;
+    await _save();
+  }
+
+  Future<void> updateAvatarIndex(int index) async {
+    avatarIndex = index;
+    await _save();
   }
 
   static String _todayString() {
@@ -100,6 +119,23 @@ class GameService {
     _lastDailyDate = _todayString();
     await _save();
   }
+
+  IconData get avatarIcon => avatarIcons[avatarIndex];
+
+  static const List<IconData> avatarIcons = [
+    Icons.face,
+    Icons.pets,
+    Icons.rocket_launch,
+    Icons.sports_esports,
+    Icons.auto_awesome,
+    Icons.bolt,
+    Icons.diamond,
+    Icons.local_fire_department,
+    Icons.psychology,
+    Icons.stars,
+    Icons.shield,
+    Icons.emoji_nature,
+  ];
 
   static int xpForLevel(int level) {
     if (level <= 1) return 0;

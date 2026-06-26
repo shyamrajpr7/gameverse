@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.white.withValues(alpha: 0.1),
                 ),
-                child: Icon(Icons.person_outline, color: Colors.white.withValues(alpha: 0.7)),
+                child: Icon(_gameService.avatarIcon, color: Colors.white.withValues(alpha: 0.7)),
               ),
             ),
           ],
