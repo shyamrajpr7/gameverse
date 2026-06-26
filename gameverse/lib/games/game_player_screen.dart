@@ -56,7 +56,12 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
     HapticService.heavy();
     await _gameService.recordGamePlayed(widget.game.id);
     await _gameService.updateHighScore(widget.game.id, finalScore);
-    final badge = await _gameService.addXP(widget.game.xpReward + (finalScore ~/ 10));
+    final baseXp = widget.game.xpReward + (finalScore ~/ 10);
+    final multiplier = _gameService.dailyMultiplier(widget.game.id);
+    final badge = await _gameService.addXP(baseXp * multiplier);
+    if (multiplier > 1) {
+      await _gameService.markDailyCompleted();
+    }
     if (badge != null && mounted) {
       final badgeData = allBadges.firstWhere((b) => b.id == badge);
       AudioService().play(SoundType.achievement);

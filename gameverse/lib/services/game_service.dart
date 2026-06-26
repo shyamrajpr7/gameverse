@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../models/game.dart';
 
 class GameBadge {
   final String id;
@@ -37,12 +38,14 @@ class GameService {
   static const String _highScoresKey = 'gameverse_highscores';
   static const String _playedGamesKey = 'gameverse_played';
   static const String _onboardingKey = 'gameverse_onboarding_seen';
+  static const String _dailyDateKey = 'gameverse_daily_date';
 
   int currentXP = 0;
   List<String> unlockedBadges = [];
   Map<String, int> highScores = {};
   List<String> playedGames = [];
   bool hasSeenOnboarding = false;
+  String? _lastDailyDate;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,6 +64,7 @@ class GameService {
       playedGames = List<String>.from(jsonDecode(playedData) as List);
     }
     hasSeenOnboarding = prefs.getBool(_onboardingKey) ?? false;
+    _lastDailyDate = prefs.getString(_dailyDateKey);
   }
 
   Future<void> _save() async {
@@ -70,6 +74,31 @@ class GameService {
     await prefs.setString(_highScoresKey, jsonEncode(highScores));
     await prefs.setString(_playedGamesKey, jsonEncode(playedGames));
     await prefs.setBool(_onboardingKey, hasSeenOnboarding);
+    await prefs.setString(_dailyDateKey, _lastDailyDate ?? '');
+  }
+
+  static String _todayString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  static Game getDailyChallenge() {
+    final hash = _todayString().hashCode;
+    return allGames[hash.abs() % allGames.length];
+  }
+
+  bool get isDailyCompleted {
+    return _lastDailyDate == _todayString();
+  }
+
+  int dailyMultiplier(String gameId) {
+    if (isDailyCompleted) return 1;
+    return gameId == getDailyChallenge().id ? 2 : 1;
+  }
+
+  Future<void> markDailyCompleted() async {
+    _lastDailyDate = _todayString();
+    await _save();
   }
 
   static int xpForLevel(int level) {

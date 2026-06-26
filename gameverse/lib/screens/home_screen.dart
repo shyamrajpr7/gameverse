@@ -4,6 +4,7 @@ import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
 import '../widgets/game_card.dart';
+import '../widgets/daily_challenge_card.dart';
 import 'game_detail_screen.dart';
 import 'games_list_screen.dart';
 import 'profile_screen.dart';
@@ -54,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: CustomScrollView(
         slivers: [
           _buildAppBar(),
+          const SliverToBoxAdapter(child: DailyChallengeCard()),
           _buildFeaturedSection(),
           _buildCategoriesSection(),
           _buildGamesSection(),
