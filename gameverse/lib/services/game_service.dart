@@ -41,6 +41,10 @@ class GameService {
   static const String _dailyDateKey = 'gameverse_daily_date';
   static const String _usernameKey = 'gameverse_username';
   static const String _avatarIndexKey = 'gameverse_avatar';
+  static const String _totalPlaysKey = 'gameverse_total_plays';
+  static const String _currentStreakKey = 'gameverse_streak';
+  static const String _bestStreakKey = 'gameverse_best_streak';
+  static const String _lastPlayedDateKey = 'gameverse_last_played';
 
   int currentXP = 0;
   List<String> unlockedBadges = [];
@@ -51,6 +55,11 @@ class GameService {
 
   String username = 'Player';
   int avatarIndex = 0;
+
+  int totalGamesPlayed = 0;
+  int currentStreak = 0;
+  int bestStreak = 0;
+  String? _lastPlayedDate;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -72,6 +81,10 @@ class GameService {
     _lastDailyDate = prefs.getString(_dailyDateKey);
     username = prefs.getString(_usernameKey) ?? 'Player';
     avatarIndex = prefs.getInt(_avatarIndexKey) ?? 0;
+    totalGamesPlayed = prefs.getInt(_totalPlaysKey) ?? 0;
+    currentStreak = prefs.getInt(_currentStreakKey) ?? 0;
+    bestStreak = prefs.getInt(_bestStreakKey) ?? 0;
+    _lastPlayedDate = prefs.getString(_lastPlayedDateKey);
   }
 
   Future<void> _save() async {
@@ -84,6 +97,10 @@ class GameService {
     await prefs.setString(_dailyDateKey, _lastDailyDate ?? '');
     await prefs.setString(_usernameKey, username);
     await prefs.setInt(_avatarIndexKey, avatarIndex);
+    await prefs.setInt(_totalPlaysKey, totalGamesPlayed);
+    await prefs.setInt(_currentStreakKey, currentStreak);
+    await prefs.setInt(_bestStreakKey, bestStreak);
+    await prefs.setString(_lastPlayedDateKey, _lastPlayedDate ?? '');
   }
 
   Future<void> updateUsername(String name) async {
@@ -181,9 +198,33 @@ class GameService {
   }
 
   Future<void> recordGamePlayed(String gameId) async {
+    totalGamesPlayed++;
     if (!playedGames.contains(gameId)) {
       playedGames.add(gameId);
-      await _save();
+    }
+    _updateStreak();
+    await _save();
+  }
+
+  void _updateStreak() {
+    final today = _todayString();
+    if (_lastPlayedDate == null) {
+      currentStreak = 1;
+    } else if (_lastPlayedDate == today) {
+      return;
+    } else {
+      final last = DateTime.parse(_lastPlayedDate!);
+      final now = DateTime.now();
+      final diff = now.difference(last).inDays;
+      if (diff == 1) {
+        currentStreak++;
+      } else {
+        currentStreak = 1;
+      }
+    }
+    _lastPlayedDate = today;
+    if (currentStreak > bestStreak) {
+      bestStreak = currentStreak;
     }
   }
 
@@ -200,6 +241,22 @@ class GameService {
 
   int getHighScore(String gameId) => highScores[gameId] ?? 0;
   bool hasPlayed(String gameId) => playedGames.contains(gameId);
+
+  Game? get favoriteGame {
+    String? bestId;
+    int bestScore = 0;
+    for (final entry in highScores.entries) {
+      if (entry.value > bestScore) {
+        bestScore = entry.value;
+        bestId = entry.key;
+      }
+    }
+    if (bestId == null) return null;
+    return allGames.firstWhere(
+      (g) => g.id == bestId,
+      orElse: () => allGames.first,
+    );
+  }
 
   Future<void> markOnboardingSeen() async {
     hasSeenOnboarding = true;

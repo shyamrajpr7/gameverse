@@ -10,6 +10,7 @@ import 'games_list_screen.dart';
 import 'profile_screen.dart';
 import 'leaderboard_screen.dart';
 import 'settings_screen.dart';
+import 'stats_screen.dart';
 import '../utils/page_transitions.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -299,6 +300,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 AudioService().play(SoundType.click);
                 HapticService.light();
                 Navigator.push(context, PageTransition.fadeScale(const LeaderboardScreen()));
+              }),
+              _buildNavItem(Icons.bar_chart, 'Stats', false, () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
+                Navigator.push(context, PageTransition.fadeScale(const StatsScreen()));
               }),
               _buildNavItem(Icons.person, 'Profile', false, () {
                 AudioService().play(SoundType.click);
