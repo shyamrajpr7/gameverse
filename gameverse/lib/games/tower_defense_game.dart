@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class TowerDefenseGame extends StatefulWidget {
   final Color gameColor;
@@ -81,6 +83,8 @@ class _TowerDefenseGameState extends State<TowerDefenseGame> {
               _score++;
               _gold += 5;
               widget.onScoreChanged(_score);
+              AudioService().play(SoundType.collect);
+              HapticService.light();
             }
             break;
           }
@@ -105,6 +109,8 @@ class _TowerDefenseGameState extends State<TowerDefenseGame> {
 
   void _placeTower(TapDownDetails details, Size size) {
     if (_gold < 20) return;
+    AudioService().play(SoundType.click);
+    HapticService.light();
     setState(() {
       _towers.add(_Tower(
         x: details.localPosition.dx / size.width,

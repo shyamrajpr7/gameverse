@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class PixelBattleGame extends StatefulWidget {
   final Color gameColor;
@@ -82,12 +84,15 @@ class _PixelBattleGameState extends State<PixelBattleGame> {
         _enemies.removeAt(i);
         _score++;
         widget.onScoreChanged(_score);
+        AudioService().play(SoundType.shoot);
+        HapticService.light();
         hit = true;
         break;
       }
     }
 
     if (!hit) {
+      AudioService().play(SoundType.click);
       _playerX = (_playerX + (tx - _playerX) * 0.3).clamp(0.05, 0.95);
       _playerY = (_playerY + (ty - _playerY) * 0.3).clamp(0.05, 0.95);
     }

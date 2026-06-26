@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class SpaceWarsGame extends StatefulWidget {
   final Color gameColor;
@@ -65,6 +67,8 @@ class _SpaceWarsGameState extends State<SpaceWarsGame> {
           _bullets.removeAt(i);
           _score++;
           widget.onScoreChanged(_score);
+          AudioService().play(SoundType.collect);
+          HapticService.light();
           break;
         }
       }
@@ -92,6 +96,7 @@ class _SpaceWarsGameState extends State<SpaceWarsGame> {
     } else {
       _shipX = (_shipX + 0.04).clamp(0.05, 0.95);
       _bullets.add(_Bullet(x: _shipX, y: _shipY - 0.04));
+      AudioService().play(SoundType.shoot);
     }
   }
 

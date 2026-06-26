@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:async';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class SkyJumperGame extends StatefulWidget {
   final Color gameColor;
@@ -81,6 +83,8 @@ class _SkyJumperGameState extends State<SkyJumperGame> with TickerProviderStateM
         _velocityY = jumpVelocity;
         _score++;
         widget.onScoreChanged(_score);
+        AudioService().play(SoundType.jump);
+        HapticService.light();
       }
     }
 
@@ -115,6 +119,7 @@ class _SkyJumperGameState extends State<SkyJumperGame> with TickerProviderStateM
       backgroundColor: const Color(0xFF0A0A1A),
       body: GestureDetector(
         onTapDown: (details) {
+          AudioService().play(SoundType.click);
           final renderBox = context.findRenderObject() as RenderBox;
           final pos = details.localPosition;
           _tapX = pos.dx / renderBox.size.width;

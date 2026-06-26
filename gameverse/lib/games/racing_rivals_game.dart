@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class RacingRivalsGame extends StatefulWidget {
   final Color gameColor;
@@ -60,6 +62,8 @@ class _RacingRivalsGameState extends State<RacingRivalsGame> with TickerProvider
         _opponentY = 1 + Random().nextDouble() * 0.3;
         _score++;
         widget.onScoreChanged(_score);
+        AudioService().play(SoundType.notification);
+        HapticService.light();
       }
 
       _obstacleX -= _playerSpeed * 1.2;
@@ -86,6 +90,8 @@ class _RacingRivalsGameState extends State<RacingRivalsGame> with TickerProvider
   }
 
   void _startGame() {
+    AudioService().play(SoundType.swipe);
+    HapticService.medium();
     setState(() {
       _playing = true;
       _playerY = 0.5;

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class FarmLifeGame extends StatefulWidget {
   final Color gameColor;
@@ -78,11 +80,15 @@ class _FarmLifeGameState extends State<FarmLifeGame> {
     if (_mode == 'plant' && crop.state == 'empty' && _money >= 5) {
       crop.state = 'planted';
       _money -= 5;
+      AudioService().play(SoundType.collect);
+      HapticService.light();
     } else if (_mode == 'harvest' && crop.state == 'ready') {
       crop.state = 'empty';
       _score += 10;
       _money += 15;
       widget.onScoreChanged(_score);
+      AudioService().play(SoundType.achievement);
+      HapticService.medium();
     }
   }
 
@@ -171,7 +177,11 @@ class _FarmLifeGameState extends State<FarmLifeGame> {
   Widget _modeBtn(String id, IconData icon, String label) {
     final active = _mode == id;
     return GestureDetector(
-      onTap: () => setState(() => _mode = id),
+      onTap: () {
+        AudioService().play(SoundType.click);
+        HapticService.selection();
+        setState(() => _mode = id);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(

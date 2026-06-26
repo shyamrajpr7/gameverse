@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class PuzzleQuestGame extends StatefulWidget {
   final Color gameColor;
@@ -72,6 +74,7 @@ class _PuzzleQuestGameState extends State<PuzzleQuestGame> {
     if (_tiles[index].matched) return;
 
     if (_selectedIndex == -1) {
+      AudioService().play(SoundType.click);
       setState(() => _selectedIndex = index);
       return;
     }
@@ -96,6 +99,7 @@ class _PuzzleQuestGameState extends State<PuzzleQuestGame> {
         widget.onGameOver(_score);
       }
     } else {
+      AudioService().play(SoundType.notification);
       setState(() => _selectedIndex = -1);
     }
   }

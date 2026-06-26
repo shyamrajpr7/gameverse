@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class ClassicSnakeGame extends StatefulWidget {
   final Color gameColor;
@@ -116,6 +118,8 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame> {
     if (newHead.x == _food.x && newHead.y == _food.y) {
       _score++;
       widget.onScoreChanged(_score);
+      AudioService().play(SoundType.collect);
+      HapticService.light();
       _spawnFood();
     } else {
       _snake.removeLast();
@@ -125,6 +129,7 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame> {
   }
 
   void _onSwipe(String direction) {
+    AudioService().play(SoundType.click);
     if ((direction == 'up' && _direction != 'down') ||
         (direction == 'down' && _direction != 'up') ||
         (direction == 'left' && _direction != 'right') ||

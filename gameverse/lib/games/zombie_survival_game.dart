@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class ZombieSurvivalGame extends StatefulWidget {
   final Color gameColor;
@@ -68,6 +70,7 @@ class _ZombieSurvivalGameState extends State<ZombieSurvivalGame> {
         if (dx < 0.04 && dy < 0.04) {
           _health -= 10;
           z.health = 0;
+          HapticService.heavy();
           if (_health <= 0) {
             _gameOver = true;
             widget.onGameOver(_score);
@@ -93,6 +96,8 @@ class _ZombieSurvivalGameState extends State<ZombieSurvivalGame> {
           _zombies.removeAt(i);
           _score++;
           widget.onScoreChanged(_score);
+          AudioService().play(SoundType.shoot);
+          HapticService.light();
         }
         return;
       }

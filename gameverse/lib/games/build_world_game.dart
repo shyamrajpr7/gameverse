@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class BuildWorldGame extends StatefulWidget {
   final Color gameColor;
@@ -48,6 +50,8 @@ class _BuildWorldGameState extends State<BuildWorldGame> {
   }
 
   void _addBlock(double x, double y) {
+    AudioService().play(SoundType.click);
+    HapticService.light();
     setState(() {
       _blocks.add(_Block(x: x, y: y, color: _selectedColor));
       _score++;
@@ -90,7 +94,11 @@ class _BuildWorldGameState extends State<BuildWorldGame> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: _palette.map((c) => GestureDetector(
-                onTap: () => setState(() => _selectedColor = c),
+                onTap: () {
+                  AudioService().play(SoundType.click);
+                  HapticService.selection();
+                  setState(() => _selectedColor = c);
+                },
                 child: Container(
                   width: 44, height: 44,
                   margin: const EdgeInsets.symmetric(horizontal: 4),

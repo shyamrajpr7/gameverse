@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
+import '../services/audio_service.dart';
 import '../services/game_service.dart';
+import '../services/haptic_service.dart';
 import 'sky_jumper_game.dart';
 import 'puzzle_quest_game.dart';
 import 'racing_rivals_game.dart';
@@ -38,6 +40,8 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
   void _onScoreChanged(int score) {
     if (!_gameOver) {
       setState(() => _score = score);
+      AudioService().play(SoundType.score);
+      HapticService.light();
     }
   }
 
@@ -48,11 +52,15 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
       _score = finalScore;
       _gameOver = true;
     });
+    AudioService().play(SoundType.gameOver);
+    HapticService.heavy();
     await _gameService.recordGamePlayed(widget.game.id);
     await _gameService.updateHighScore(widget.game.id, finalScore);
     final badge = await _gameService.addXP(widget.game.xpReward + (finalScore ~/ 10));
     if (badge != null && mounted) {
       final badgeData = allBadges.firstWhere((b) => b.id == badge);
+      AudioService().play(SoundType.achievement);
+      HapticService.medium();
       Navigator.of(context).push(PageRouteBuilder(
         opaque: false,
         pageBuilder: (_, _, _) => AchievementOverlay(
@@ -64,10 +72,14 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
   }
 
   void _startGame() {
+    AudioService().play(SoundType.swipe);
+    HapticService.light();
     setState(() => _gameStarted = true);
   }
 
   void _restartGame() {
+    AudioService().play(SoundType.swipe);
+    HapticService.light();
     setState(() {
       _score = 0;
       _gameOver = false;

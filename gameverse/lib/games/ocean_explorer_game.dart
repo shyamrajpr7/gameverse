@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
+import '../services/haptic_service.dart';
 
 class OceanExplorerGame extends StatefulWidget {
   final Color gameColor;
@@ -72,6 +74,8 @@ class _OceanExplorerGameState extends State<OceanExplorerGame> {
         _score += 5;
         _oxygen = (_oxygen + 10).clamp(0, 100);
         widget.onScoreChanged(_score);
+        AudioService().play(SoundType.collect);
+        HapticService.light();
         _fish.removeAt(i);
       }
     }

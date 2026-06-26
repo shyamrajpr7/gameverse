@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/splash_onboarding_screen.dart';
+import 'services/audio_service.dart';
 import 'services/game_service.dart';
 
 void main() {
@@ -22,6 +23,7 @@ class _GameVerseAppState extends State<GameVerseApp> {
   @override
   void initState() {
     super.initState();
+    AudioService().init();
     _gameService.load().then((_) {
       if (mounted) setState(() => _loaded = true);
     });
