@@ -36,11 +36,13 @@ class GameService {
   static const String _badgesKey = 'gameverse_badges';
   static const String _highScoresKey = 'gameverse_highscores';
   static const String _playedGamesKey = 'gameverse_played';
+  static const String _onboardingKey = 'gameverse_onboarding_seen';
 
   int currentXP = 0;
   List<String> unlockedBadges = [];
   Map<String, int> highScores = {};
   List<String> playedGames = [];
+  bool hasSeenOnboarding = false;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -58,6 +60,7 @@ class GameService {
     if (playedData != null) {
       playedGames = List<String>.from(jsonDecode(playedData) as List);
     }
+    hasSeenOnboarding = prefs.getBool(_onboardingKey) ?? false;
   }
 
   Future<void> _save() async {
@@ -66,6 +69,7 @@ class GameService {
     await prefs.setString(_badgesKey, jsonEncode(unlockedBadges));
     await prefs.setString(_highScoresKey, jsonEncode(highScores));
     await prefs.setString(_playedGamesKey, jsonEncode(playedGames));
+    await prefs.setBool(_onboardingKey, hasSeenOnboarding);
   }
 
   static int xpForLevel(int level) {
@@ -131,4 +135,9 @@ class GameService {
 
   int getHighScore(String gameId) => highScores[gameId] ?? 0;
   bool hasPlayed(String gameId) => playedGames.contains(gameId);
+
+  Future<void> markOnboardingSeen() async {
+    hasSeenOnboarding = true;
+    await _save();
+  }
 }
