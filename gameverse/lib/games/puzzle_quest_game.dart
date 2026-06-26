@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/audio_service.dart';
-import '../services/haptic_service.dart';
 
 class PuzzleQuestGame extends StatefulWidget {
   final Color gameColor;

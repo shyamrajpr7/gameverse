@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
@@ -175,7 +176,7 @@ class AudioService {
     int offset = 0;
 
     void w(String s) {
-      for (int i = 0; i < s.length; i++) wav.setUint8(offset++, s.codeUnitAt(i));
+      for (int i = 0; i < s.length; i++) { wav.setUint8(offset++, s.codeUnitAt(i)); }
     }
     void u32(int v) { wav.setUint32(offset, v, Endian.little); offset += 4; }
     void u16(int v) { wav.setUint16(offset, v, Endian.little); offset += 2; }
