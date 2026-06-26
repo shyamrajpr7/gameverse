@@ -4,6 +4,7 @@ import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
 import '../games/game_player_screen.dart';
+import '../utils/page_transitions.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final Game game;
@@ -37,7 +38,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     HapticService.medium();
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => GamePlayerScreen(game: widget.game)),
+      PageTransition.slideUp(GamePlayerScreen(game: widget.game)),
     );
     _load();
   }
@@ -218,25 +219,28 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Widget _buildPlayButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _playGame,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: widget.game.color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 8,
-          shadowColor: widget.game.color.withValues(alpha: 0.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.play_arrow_rounded, size: 28),
-            const SizedBox(width: 8),
-            Text(_hasPlayed ? 'Play Again' : 'Play Now', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
+    return PulsingGlow(
+      color: widget.game.color,
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: _playGame,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.game.color,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 8,
+            shadowColor: widget.game.color.withValues(alpha: 0.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.play_arrow_rounded, size: 28),
+              const SizedBox(width: 8),
+              Text(_hasPlayed ? 'Play Again' : 'Play Now', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
         ),
       ),
     );

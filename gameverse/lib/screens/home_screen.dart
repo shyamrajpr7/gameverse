@@ -10,6 +10,7 @@ import 'games_list_screen.dart';
 import 'profile_screen.dart';
 import 'leaderboard_screen.dart';
 import 'settings_screen.dart';
+import '../utils/page_transitions.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                Navigator.push(context, PageTransition.fadeScale(const SettingsScreen()));
               },
               child: Container(
                 width: 44,
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                Navigator.push(context, PageTransition.fadeScale(const ProfileScreen()));
               },
               child: Container(
                 width: 44,
@@ -185,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     HapticService.light();
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => GameDetailScreen(game: featured[index])),
+                      PageTransition.slideUp(GameDetailScreen(game: featured[index])),
                     );
                   },
                 );
@@ -255,16 +256,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            return GameCard(
-              game: games[index],
-              onTap: () {
-                AudioService().play(SoundType.click);
-                HapticService.light();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => GameDetailScreen(game: games[index])),
-                );
-              },
+            return StaggeredFadeIn(
+              index: index,
+              child: GameCard(
+                game: games[index],
+                onTap: () {
+                  AudioService().play(SoundType.click);
+                  HapticService.light();
+                  Navigator.push(
+                    context,
+                    PageTransition.slideUp(GameDetailScreen(game: games[index])),
+                  );
+                },
+              ),
             );
           },
           childCount: games.length,
@@ -289,17 +293,17 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildNavItem(Icons.grid_view, 'Games', false, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const GamesListScreen()));
+                Navigator.push(context, PageTransition.fadeScale(const GamesListScreen()));
               }),
               _buildNavItem(Icons.leaderboard, 'Leaderboard', false, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+                Navigator.push(context, PageTransition.fadeScale(const LeaderboardScreen()));
               }),
               _buildNavItem(Icons.person, 'Profile', false, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                Navigator.push(context, PageTransition.fadeScale(const ProfileScreen()));
               }),
             ],
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/game.dart';
 import '../widgets/game_card.dart';
 import 'game_detail_screen.dart';
+import '../utils/page_transitions.dart';
 
 class GamesListScreen extends StatefulWidget {
   const GamesListScreen({super.key});
@@ -244,11 +245,14 @@ class _GamesListScreenState extends State<GamesListScreen> {
           mainAxisSpacing: 12,
         ),
         itemCount: games.length,
-        itemBuilder: (context, index) => GameCard(
-          game: games[index],
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => GameDetailScreen(game: games[index])),
+        itemBuilder: (context, index) => StaggeredFadeIn(
+          index: index,
+          child: GameCard(
+            game: games[index],
+            onTap: () => Navigator.push(
+              context,
+              PageTransition.slideUp(GameDetailScreen(game: games[index])),
+            ),
           ),
         ),
       ),
