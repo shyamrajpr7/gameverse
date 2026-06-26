@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
+import '../services/audio_service.dart';
 import '../services/game_service.dart';
+import '../services/haptic_service.dart';
 import '../games/game_player_screen.dart';
 
 class GameDetailScreen extends StatefulWidget {
@@ -31,6 +33,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   void _playGame() async {
+    AudioService().play(SoundType.swipe);
+    HapticService.medium();
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => GamePlayerScreen(game: widget.game)),

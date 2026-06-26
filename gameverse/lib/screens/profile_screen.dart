@@ -92,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: EdgeInsets.only(top: 48, left: 72),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text('My Profile', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
               Text('Your gaming journey', style: TextStyle(fontSize: 13, color: Colors.white38)),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
+import '../services/audio_service.dart';
 import '../services/game_service.dart';
+import '../services/haptic_service.dart';
 import '../widgets/game_card.dart';
 import 'game_detail_screen.dart';
 import 'games_list_screen.dart';
@@ -88,10 +90,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const Spacer(),
-            _buildIconButton(Icons.notifications_outlined, () {}),
+            _buildIconButton(AudioService().isMuted ? Icons.volume_off : Icons.volume_up, () {
+              AudioService().toggleMute();
+              setState(() {});
+            }),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+              onTap: () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+              },
               child: Container(
                 width: 44,
                 height: 44,
@@ -151,10 +160,14 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 return FeaturedGameCard(
                   game: featured[index],
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => GameDetailScreen(game: featured[index])),
-                  ),
+                  onTap: () {
+                    AudioService().play(SoundType.swipe);
+                    HapticService.light();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => GameDetailScreen(game: featured[index])),
+                    );
+                  },
                 );
               },
             ),
@@ -182,7 +195,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 CategoryChip(
                   category: const GameCategory(id: 'all', name: 'All', icon: Icons.explore, color: Color(0xFF6366F1)),
                   selected: _selectedCategory == null,
-                  onTap: () => setState(() => _selectedCategory = null),
+                  onTap: () {
+                    AudioService().play(SoundType.click);
+                    HapticService.selection();
+                    setState(() => _selectedCategory = null);
+                  },
                 ),
                 const SizedBox(width: 8),
                 ...categories.map((cat) => Padding(
@@ -190,7 +207,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: CategoryChip(
                     category: cat,
                     selected: _selectedCategory == cat.id,
-                    onTap: () => setState(() => _selectedCategory = cat.id),
+                    onTap: () {
+                      AudioService().play(SoundType.click);
+                      HapticService.selection();
+                      setState(() => _selectedCategory = cat.id);
+                    },
                   ),
                 )),
               ],
@@ -216,10 +237,14 @@ class _HomeScreenState extends State<HomeScreen> {
           (context, index) {
             return GameCard(
               game: games[index],
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => GameDetailScreen(game: games[index])),
-              ),
+              onTap: () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => GameDetailScreen(game: games[index])),
+                );
+              },
             );
           },
           childCount: games.length,
@@ -242,10 +267,18 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildNavItem(Icons.home_filled, 'Home', true, () {}),
               _buildNavItem(Icons.grid_view, 'Games', false, () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const GamesListScreen()));
               }),
-              _buildNavItem(Icons.leaderboard, 'Leaderboard', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()))),
+              _buildNavItem(Icons.leaderboard, 'Leaderboard', false, () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+              }),
               _buildNavItem(Icons.person, 'Profile', false, () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
               }),
             ],

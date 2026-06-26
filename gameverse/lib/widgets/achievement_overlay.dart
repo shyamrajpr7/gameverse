@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
 import '../services/game_service.dart';
 
 class AchievementOverlay extends StatefulWidget {
@@ -51,6 +52,8 @@ class _AchievementOverlayState extends State<AchievementOverlay>
     _shimmerController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1800))
       ..repeat();
+
+    AudioService().play(SoundType.achievement);
 
     // Sequence: bg → card pop → particles
     _bgController.forward().then((_) {
