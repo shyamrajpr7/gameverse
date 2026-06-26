@@ -8,6 +8,7 @@ import 'game_detail_screen.dart';
 import 'games_list_screen.dart';
 import 'profile_screen.dart';
 import 'leaderboard_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -94,6 +95,23 @@ class _HomeScreenState extends State<HomeScreen> {
               AudioService().toggleMute();
               setState(() {});
             }),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+                child: Icon(Icons.settings, color: Colors.white.withValues(alpha: 0.7)),
+              ),
+            ),
             const SizedBox(width: 8),
             GestureDetector(
               onTap: () {

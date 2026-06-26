@@ -1,16 +1,18 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
 import '../services/game_service.dart';
+import '../services/haptic_service.dart';
 import 'home_screen.dart';
 
-class SplashOnboardingScreen extends StatefulWidget {
-  const SplashOnboardingScreen({super.key});
+class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
 
   @override
-  State<SplashOnboardingScreen> createState() => _SplashOnboardingScreenState();
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
+class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
   late AnimationController _logoScaleController;
   late AnimationController _logoFadeController;
@@ -22,20 +24,43 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
 
   bool _showSplash = true;
   int _currentPage = 0;
-  bool _getStarted = false;
+
+  final _pages = const [
+    _OnboardingPageData(
+      icon: Icons.explore,
+      title: 'Discover Games',
+      description:
+          'Explore 12 retro and modern arcade mini-games.',
+      color: Color(0xFFFFD700),
+    ),
+    _OnboardingPageData(
+      icon: Icons.auto_awesome,
+      title: 'Earn XP & Levels',
+      description:
+          'Play games to level up your profile.',
+      color: Color(0xFF6C5CE7),
+    ),
+    _OnboardingPageData(
+      icon: Icons.workspace_premium,
+      title: 'Unlock Badges',
+      description:
+          'Complete challenges and earn rare achievements.',
+      color: Color(0xFFFF6B6B),
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
 
-    _logoScaleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-
     _logoFadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
+    );
+
+    _logoScaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
     );
 
     _taglineController = AnimationController(
@@ -60,10 +85,10 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
 
     _pageController = PageController();
 
-    _startSplashSequence();
+    _startSplash();
   }
 
-  void _startSplashSequence() {
+  void _startSplash() {
     _logoFadeController.forward().then((_) {
       _logoScaleController.forward().then((_) {
         _taglineController.forward().then((_) {
@@ -85,8 +110,8 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
 
   @override
   void dispose() {
-    _logoScaleController.dispose();
     _logoFadeController.dispose();
+    _logoScaleController.dispose();
     _taglineController.dispose();
     _glowController.dispose();
     _particleController.dispose();
@@ -96,13 +121,10 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
   }
 
   void _onPageChanged(int page) {
-    setState(() {
-      _currentPage = page;
-      _getStarted = page == 2;
-    });
+    setState(() => _currentPage = page);
   }
 
-  Future<void> _completeOnboarding() async {
+  Future<void> _complete() async {
     await GameService().markOnboardingSeen();
     if (mounted) {
       Navigator.pushReplacement(
@@ -118,13 +140,13 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
       backgroundColor: const Color(0xFF0A0A1A),
       body: Stack(
         children: [
-          if (_showSplash) _buildSplashPhase(),
+          if (_showSplash) _buildSplash(),
           AnimatedBuilder(
             animation: _transitionController,
             builder: (context, _) {
               return Opacity(
                 opacity: _showSplash ? 1.0 - _transitionController.value : 1.0,
-                child: _showSplash ? const SizedBox.shrink() : _buildOnboardingPhase(),
+                child: _showSplash ? const SizedBox.shrink() : _buildCarousel(),
               );
             },
           ),
@@ -133,80 +155,70 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
     );
   }
 
-  // ────────────────────────────────────────
-  // SPLASH PHASE
-  // ────────────────────────────────────────
-  Widget _buildSplashPhase() {
+  // ── SPLASH ──
+
+  Widget _buildSplash() {
     return Stack(
       children: [
-        // Particle sparkles
         Positioned.fill(
           child: AnimatedBuilder(
             animation: _particleController,
-            builder: (context, _) {
-              return CustomPaint(
-                painter: _SplashParticlePainter(
-                  progress: _particleController.value,
-                ),
-              );
-            },
+            builder: (context, _) => CustomPaint(
+              painter: _SplashParticlePainter(
+                progress: _particleController.value,
+              ),
+            ),
           ),
         ),
         Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Logo with glow ring
               AnimatedBuilder(
                 animation: Listenable.merge([
                   _logoFadeController,
                   _logoScaleController,
                   _glowController,
                 ]),
-                builder: (context, _) {
-                  return Opacity(
-                    opacity: _logoFadeController.value,
-                    child: Transform.scale(
-                      scale: 0.85 + 0.15 * _logoScaleController.value,
-                      child: _buildLogoWithGlow(),
-                    ),
-                  );
-                },
+                builder: (context, _) => Opacity(
+                  opacity: _logoFadeController.value,
+                  child: Transform.scale(
+                    scale: 0.85 + 0.15 * _logoScaleController.value,
+                    child: _buildLogo(),
+                  ),
+                ),
               ),
               const SizedBox(height: 28),
-              // GameVerse title
               AnimatedBuilder(
                 animation: _taglineController,
-                builder: (context, _) {
-                  return Opacity(
-                    opacity: _taglineController.value,
-                    child: Transform.translate(
-                      offset: Offset(0, 12 * (1 - _taglineController.value)),
-                      child: const Column(
-                        children: [
-                          Text(
-                            'GameVerse',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: -0.5,
-                            ),
+                builder: (context, _) => Opacity(
+                  opacity: _taglineController.value,
+                  child: Transform.translate(
+                    offset: Offset(0, 12 * (1 - _taglineController.value)),
+                    child: const Column(
+                      children: [
+                        Text(
+                          'GameVerse',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Discover & Play',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.white38,
-                              letterSpacing: 0.3,
-                            ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Discover & Play',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.white38,
+                            letterSpacing: 0.3,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ],
           ),
@@ -215,7 +227,7 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
     );
   }
 
-  Widget _buildLogoWithGlow() {
+  Widget _buildLogo() {
     return Container(
       width: 150,
       height: 150,
@@ -232,9 +244,9 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
         ],
       ),
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -255,22 +267,20 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
     );
   }
 
-  // ────────────────────────────────────────
-  // ONBOARDING PHASE
-  // ────────────────────────────────────────
-  Widget _buildOnboardingPhase() {
+  // ── CAROUSEL ──
+
+  Widget _buildCarousel() {
     return Column(
       children: [
-        // Skip button
         Align(
           alignment: Alignment.topRight,
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 12, 20, 0),
               child: TextButton(
-                onPressed: _completeOnboarding,
+                onPressed: _complete,
                 child: Text(
-                  _getStarted ? '' : 'Skip',
+                  _currentPage == 2 ? '' : 'Skip',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 15,
@@ -280,40 +290,17 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
             ),
           ),
         ),
-        // Page view
         Expanded(
           child: PageView(
             controller: _pageController,
             onPageChanged: _onPageChanged,
-            children: [
-              _buildOnboardingPage(
-                icon: Icons.explore,
-                title: 'Discover Games',
-                description:
-                    'Browse a curated collection of exciting mini-games. From action to puzzles, there\'s something for everyone.',
-                color: const Color(0xFFFFD700),
-                pageIndex: 0,
-              ),
-              _buildOnboardingPage(
-                icon: Icons.auto_awesome,
-                title: 'Level Up',
-                description:
-                    'Earn XP, unlock badges, and track your achievements as you play and master new games.',
-                color: const Color(0xFF6C5CE7),
-                pageIndex: 1,
-              ),
-              _buildOnboardingPage(
-                icon: Icons.emoji_events,
-                title: 'Compete & Win',
-                description:
-                    'Climb the leaderboards, set high scores, and prove you\'re the ultimate GameVerse champion.',
-                color: const Color(0xFFFF6B6B),
-                pageIndex: 2,
-              ),
-            ],
+            children: _pages.asMap().entries.map((e) {
+              final i = e.key;
+              final p = e.value;
+              return _buildPage(p, i);
+            }).toList(),
           ),
         ),
-        // Dot indicators + Get Started
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
@@ -322,10 +309,9 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
               children: [
                 _buildDots(),
                 const SizedBox(height: 28),
-                if (_getStarted)
-                  _buildGetStartedButton()
-                else
-                  _buildArrowButton(),
+                _currentPage == 2
+                    ? _buildGetStarted()
+                    : _buildNextButton(),
               ],
             ),
           ),
@@ -334,25 +320,63 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
     );
   }
 
-  Widget _buildOnboardingPage({
-    required IconData icon,
-    required String title,
-    required String description,
-    required Color color,
-    required int pageIndex,
-  }) {
+  Widget _buildPage(_OnboardingPageData p, int i) {
     return AnimatedBuilder(
       animation: _glowController,
       builder: (context, _) {
+        final glow = _glowController.value;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildAnimatedIcon(icon, color),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 160, height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: p.color.withValues(alpha: 0.08 + 0.06 * glow),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 138, height: 138,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: p.color.withValues(alpha: 0.04 + 0.04 * glow),
+                      border: Border.all(
+                        color: p.color.withValues(alpha: 0.12 + 0.08 * glow),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 110, height: 110,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [
+                        p.color.withValues(alpha: 0.15 + 0.1 * glow),
+                        p.color.withValues(alpha: 0),
+                      ]),
+                      boxShadow: [
+                        BoxShadow(
+                          color: p.color.withValues(alpha: 0.2 + 0.2 * glow),
+                          blurRadius: 20 + 18 * glow,
+                          spreadRadius: 2 + 3 * glow,
+                        ),
+                      ],
+                    ),
+                    child: Icon(p.icon, size: 56, color: p.color),
+                  ),
+                ],
+              ),
               const SizedBox(height: 40),
               Text(
-                title,
+                p.title,
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -363,7 +387,7 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
               ),
               const SizedBox(height: 14),
               Text(
-                description,
+                p.description,
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.white.withValues(alpha: 0.55),
@@ -378,75 +402,19 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
     );
   }
 
-  Widget _buildAnimatedIcon(IconData icon, Color color) {
-    final glow = _glowController.value;
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Outer ring
-        Container(
-          width: 160,
-          height: 160,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: color.withValues(alpha: 0.08 + 0.06 * glow),
-              width: 1,
-            ),
-          ),
-        ),
-        // Middle ring
-        Container(
-          width: 138,
-          height: 138,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withValues(alpha: 0.04 + 0.04 * glow),
-            border: Border.all(
-              color: color.withValues(alpha: 0.12 + 0.08 * glow),
-              width: 1.5,
-            ),
-          ),
-        ),
-        // Core glow
-        Container(
-          width: 110,
-          height: 110,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                color.withValues(alpha: 0.15 + 0.1 * glow),
-                color.withValues(alpha: 0),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.2 + 0.2 * glow),
-                blurRadius: 20 + 18 * glow,
-                spreadRadius: 2 + 3 * glow,
-              ),
-            ],
-          ),
-          child: Icon(icon, size: 56, color: color),
-        ),
-      ],
-    );
-  }
-
   Widget _buildDots() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (i) {
-        final isActive = i == _currentPage;
+        final active = i == _currentPage;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: const EdgeInsets.symmetric(horizontal: 5),
-          width: isActive ? 28 : 8,
+          width: active ? 28 : 8,
           height: 8,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            color: isActive
+            color: active
                 ? const Color(0xFFFFD700)
                 : Colors.white.withValues(alpha: 0.15),
           ),
@@ -455,9 +423,11 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
     );
   }
 
-  Widget _buildArrowButton() {
+  Widget _buildNextButton() {
     return GestureDetector(
       onTap: () {
+        AudioService().play(SoundType.swipe);
+        HapticService.light();
         _pageController.nextPage(
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
@@ -466,9 +436,9 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
       child: Container(
         width: 56,
         height: 56,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
           ),
         ),
@@ -481,12 +451,12 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
     );
   }
 
-  Widget _buildGetStartedButton() {
+  Widget _buildGetStarted() {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: _completeOnboarding,
+        onPressed: _complete,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFFD700),
           foregroundColor: Colors.black,
@@ -508,9 +478,22 @@ class _SplashOnboardingScreenState extends State<SplashOnboardingScreen>
   }
 }
 
-// ────────────────────────────────────────
-// SPLASH PARTICLE PAINTER
-// ────────────────────────────────────────
+class _OnboardingPageData {
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color color;
+
+  const _OnboardingPageData({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.color,
+  });
+}
+
+// ── SPLASH PARTICLES ──
+
 class _SplashParticlePainter extends CustomPainter {
   final double progress;
 
@@ -529,7 +512,6 @@ class _SplashParticlePainter extends CustomPainter {
       final speed = 60.0 + rng.nextDouble() * 140;
       final radius = 2.0 + rng.nextDouble() * 3.5;
       final colorIndex = rng.nextDouble();
-
       final t = progress;
       final dx = cos(angle) * speed * t;
       final dy = sin(angle) * speed * t - 50 * t * t;

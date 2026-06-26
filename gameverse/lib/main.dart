@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-import 'screens/splash_onboarding_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/audio_service.dart';
 import 'services/game_service.dart';
 
@@ -48,7 +48,7 @@ class _GameVerseAppState extends State<GameVerseApp> {
       home: _loaded
           ? (_gameService.hasSeenOnboarding
               ? const HomeScreen()
-              : const SplashOnboardingScreen())
+              : const OnboardingScreen())
           : const _SplashLoader(),
     );
   }
