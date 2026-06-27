@@ -4,6 +4,7 @@ import '../services/game_service.dart';
 import '../services/haptic_service.dart';
 import '../models/game.dart';
 import '../widgets/badge_widget.dart';
+import '../widgets/share_preview_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -495,6 +496,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(width: 4),
                     Text('${entry.value}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFFFD700))),
                   ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  AudioService().play(SoundType.click);
+                  HapticService.light();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SharePreviewDialog(
+                        game: game,
+                        score: entry.value,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.1),
+                  ),
+                  child: Icon(Icons.share, size: 16, color: const Color(0xFFFFD700).withValues(alpha: 0.6)),
                 ),
               ),
             ],

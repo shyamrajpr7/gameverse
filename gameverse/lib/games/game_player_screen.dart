@@ -15,6 +15,7 @@ import 'build_world_game.dart';
 import 'pixel_battle_game.dart';
 import 'classic_snake_game.dart';
 import '../widgets/achievement_overlay.dart';
+import '../widgets/share_preview_dialog.dart';
 
 class GamePlayerScreen extends StatefulWidget {
   final Game game;
@@ -205,6 +206,29 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
                 const SizedBox(height: 20),
                 _CoinsEarnedBadge(coins: _coinsEarned),
                 const SizedBox(height: 28),
+                SizedBox(
+                  width: 200,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SharePreviewDialog(
+                          game: widget.game,
+                          score: _score,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.share, size: 20),
+                    label: const Text('Share Score', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      foregroundColor: Colors.black87,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: 200,
                   height: 50,
