@@ -5,6 +5,9 @@ import 'package:flutter/scheduler.dart';
 import '../services/audio_service.dart';
 import '../services/haptic_service.dart';
 import '../utils/particle_system.dart';
+import '../models/power_up.dart';
+import '../services/power_up_service.dart';
+import '../widgets/power_up_widget.dart';
 
 class ClassicSnakeGame extends StatefulWidget {
   final Color gameColor;
@@ -38,7 +41,8 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
   late Ticker _ticker;
   double _gameTime = 0;
   double _moveAccum = 0;
-  static const double _moveInterval = 0.18;
+  static const double _baseMoveInterval = 0.18;
+  static const double _boostedMoveInterval = 0.12;
 
   List<Offset> _prevPositions = [];
   List<Offset> _nextPositions = [];
@@ -55,9 +59,23 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
   double _redFlash = 0;
   double _scoreBounce = 1;
 
+  // ── Power-ups ──
+  final PowerUpService _powerUpService = PowerUpService();
+  _PowerUpPickup? _currentPowerUp;
+  double _powerUpSpawnTimer = 5;
+  static const double _powerUpSpawnInterval = 15;
+  static const double _powerUpDespawnTime = 5;
+  _FlyingPowerUp? _flyingPowerUp;
+
   @override
   void initState() {
     super.initState();
+    _powerUpService.onPowerUpActivated = (_) {
+      if (mounted) setState(() {});
+    };
+    _powerUpService.onPowerUpExpired = (_) {
+      if (mounted) setState(() {});
+    };
     _resetGame();
     _ticker = createTicker(_onTick);
     _ticker.start();
@@ -66,8 +84,14 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
   @override
   void dispose() {
     _ticker.dispose();
+    _powerUpService.reset();
     super.dispose();
   }
+
+  double get _moveInterval =>
+      _powerUpService.isActive(PowerUpType.speedBoost)
+          ? _boostedMoveInterval
+          : _baseMoveInterval;
 
   void _resetGame() {
     _snake = [
@@ -88,6 +112,10 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
     _trail.clear();
     _floatingTexts.clear();
     _explodingSegs.clear();
+    _powerUpService.reset();
+    _currentPowerUp = null;
+    _powerUpSpawnTimer = 5;
+    _flyingPowerUp = null;
     _updatePositions();
     _spawnFood();
   }
@@ -99,6 +127,9 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
 
   void _spawnFood() {
     final occupied = _snake.map((s) => '${s.x.toInt()},${s.y.toInt()}').toSet();
+    if (_currentPowerUp != null) {
+      occupied.add('${_currentPowerUp!.x},${_currentPowerUp!.y}');
+    }
     final available = <_Point>[];
     for (int x = 0; x < _gridSize; x++) {
       for (int y = 0; y < _gridSize; y++) {
@@ -113,7 +144,68 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
       return;
     }
     _food = available[_rng.nextInt(available.length)];
+  }
 
+  void _trySpawnPowerUp() {
+    if (_currentPowerUp != null) return;
+    final occupied = _snake.map((s) => '${s.x.toInt()},${s.y.toInt()}').toSet();
+    occupied.add('${_food.x},${_food.y}');
+    final available = <_Point>[];
+    for (int x = 0; x < _gridSize; x++) {
+      for (int y = 0; y < _gridSize; y++) {
+        if (!occupied.contains('$x,$y')) {
+          available.add(_Point(x: x, y: y));
+        }
+      }
+    }
+    if (available.isEmpty) return;
+    final cell = available[_rng.nextInt(available.length)];
+    final types = [PowerUpType.shield, PowerUpType.speedBoost, PowerUpType.doublePoints];
+    final type = types[_rng.nextInt(types.length)];
+    _currentPowerUp = _PowerUpPickup(
+      powerUp: powerUpForType(type),
+      x: cell.x,
+      y: cell.y,
+    );
+  }
+
+  void _collectPowerUp(_PowerUpPickup pickup, {required Offset screenPos}) {
+    _currentPowerUp = null;
+    _powerUpSpawnTimer = 0;
+
+    _powerUpService.activate(
+      pickup.powerUp.type,
+      pickup.powerUp.durationSeconds.toDouble(),
+    );
+
+    final powerUp = pickup.powerUp;
+    _emitter.emit(
+      position: screenPos,
+      count: 15,
+      color: powerUp.color,
+      speed: 140,
+      spread: 2 * pi,
+      minSize: 2,
+      maxSize: 6,
+      type: ParticleType.star,
+      lifespan: 0.7,
+    );
+
+    _floatingTexts.add(_FloatingText(
+      px: screenPos.dx,
+      py: screenPos.dy,
+      text: powerUp.name,
+      color: powerUp.color,
+    ));
+
+    AudioService().play(SoundType.collect);
+    HapticService.medium();
+
+    _flyingPowerUp = _FlyingPowerUp(
+      powerUp: powerUp,
+      startPos: screenPos,
+      elapsed: 0,
+    );
   }
 
   void _onTick(Duration elapsed) {
@@ -124,7 +216,22 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
     _redFlash = max(0, _redFlash - dt * 4);
     _scoreBounce += (1 - _scoreBounce) * 0.15;
 
+    _powerUpService.update(dt);
+
     if (!_dead && !_gameOver) {
+      _powerUpSpawnTimer += dt;
+      if (_powerUpSpawnTimer >= _powerUpSpawnInterval) {
+        _powerUpSpawnTimer = 0;
+        _trySpawnPowerUp();
+      }
+
+      if (_currentPowerUp != null) {
+        _currentPowerUp!.life += dt;
+        if (_currentPowerUp!.life >= _powerUpDespawnTime) {
+          _currentPowerUp = null;
+        }
+      }
+
       _moveAccum += dt;
       if (_moveAccum >= _moveInterval) {
         _moveAccum -= _moveInterval;
@@ -163,6 +270,13 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
     }
     _floatingTexts.removeWhere((ft) => ft.life >= ft.maxLife);
 
+    if (_flyingPowerUp != null) {
+      _flyingPowerUp!.elapsed += dt;
+      if (_flyingPowerUp!.elapsed >= 0.4) {
+        _flyingPowerUp = null;
+      }
+    }
+
     if (mounted) setState(() {});
   }
 
@@ -189,20 +303,22 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
 
     if (newHead.x < 0 || newHead.x >= _gridSize ||
         newHead.y < 0 || newHead.y >= _gridSize) {
-      _die();
+      _handleDeath();
       return;
     }
 
     if (_snake.any((s) => s.x.toInt() == newHead.x && s.y.toInt() == newHead.y)) {
-      _die();
+      _handleDeath();
       return;
     }
 
     _prevPositions = _snake.map((s) => Offset(s.x, s.y)).toList();
     _snake.insert(0, _SnakeSeg(x: newHead.x.toDouble(), y: newHead.y.toDouble()));
 
-    if (newHead.x.toInt() == _food.x && newHead.y.toInt() == _food.y) {
-      _score++;
+    final ateFood = newHead.x.toInt() == _food.x && newHead.y.toInt() == _food.y;
+    if (ateFood) {
+      final points = _powerUpService.isActive(PowerUpType.doublePoints) ? 2 : 1;
+      _score += points;
       widget.onScoreChanged(_score);
       AudioService().play(SoundType.collect);
       HapticService.light();
@@ -225,13 +341,59 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
         lifespan: 0.7,
       );
 
-      _floatingTexts.add(_FloatingText(px: fx, py: fy));
+      _floatingTexts.add(_FloatingText(
+        px: fx,
+        py: fy,
+        text: points > 1 ? 'x2' : '+1',
+        color: const Color(0xFFFFD700),
+      ));
       _spawnFood();
     } else {
       _snake.removeLast();
     }
 
+    if (_currentPowerUp != null && !_currentPowerUp!.collected &&
+        newHead.x == _currentPowerUp!.x && newHead.y == _currentPowerUp!.y) {
+      _currentPowerUp!.collected = true;
+      final cellSize = _getCellSize();
+      final c = _getGameAreaCenter();
+      final px = c.dx + (_currentPowerUp!.x - _gridSize / 2 + 0.5) * cellSize;
+      final py = c.dy + (_currentPowerUp!.y - _gridSize / 2 + 0.5) * cellSize;
+      _collectPowerUp(_currentPowerUp!, screenPos: Offset(px, py));
+    }
+
     _nextPositions = _snake.map((s) => Offset(s.x, s.y)).toList();
+  }
+
+  void _handleDeath() {
+    if (_powerUpService.isActive(PowerUpType.shield)) {
+      _powerUpService.deactivate(PowerUpType.shield);
+      _redFlash = 0.5;
+      _shake.trigger(4, 150);
+      AudioService().play(SoundType.notification);
+      HapticService.medium();
+
+      final cellSize = _getCellSize();
+      final c = _getGameAreaCenter();
+      final head = _snake.first;
+      final hx = c.dx + (head.x - _gridSize / 2 + 0.5) * cellSize;
+      final hy = c.dy + (head.y - _gridSize / 2 + 0.5) * cellSize;
+      _emitter.emitBurst(
+        position: Offset(hx, hy),
+        color: const Color(0xFF4FC3F7),
+        baseSpeed: 100,
+        lifespan: 0.5,
+      );
+      _floatingTexts.add(_FloatingText(
+        px: hx,
+        py: hy,
+        text: 'Shield!',
+        color: const Color(0xFF4FC3F7),
+      ));
+      return;
+    }
+
+    _die();
   }
 
   void _die() {
@@ -241,6 +403,8 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
     _shake.trigger(8, 300);
     AudioService().play(SoundType.gameOver);
     HapticService.heavy();
+    _powerUpService.reset();
+    _currentPowerUp = null;
 
     final cellSize = _getCellSize();
     final c = _getGameAreaCenter();
@@ -303,91 +467,171 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 16, 4),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                    onPressed: () {
-                      _ticker.stop();
-                      widget.onGameOver(_score);
-                    },
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 16, 4),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white70),
+                        onPressed: () {
+                          _ticker.stop();
+                          widget.onGameOver(_score);
+                        },
+                      ),
+                      const Spacer(),
+                      AnimatedBuilder(
+                        animation: AlwaysStoppedAnimation(_scoreBounce),
+                        builder: (context, _) => Transform.scale(
+                          scale: _scoreBounce,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.catching_pokemon, color: widget.gameColor, size: 18),
+                                const SizedBox(width: 6),
+                                Text('$_score', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  AnimatedBuilder(
-                    animation: AlwaysStoppedAnimation(_scoreBounce),
-                    builder: (context, _) => Transform.scale(
-                      scale: _scoreBounce,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.catching_pokemon, color: widget.gameColor, size: 18),
-                            const SizedBox(width: 6),
-                            Text('$_score', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: PowerUpHUD(
+                    activePowerUps: buildActivePowerUpDisplays(
+                      _powerUpService.activeTypes,
+                      _powerUpService.remainingTime,
+                      _powerUpService.totalDuration,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: GestureDetector(
+                      onPanEnd: (details) {
+                        final dx = details.velocity.pixelsPerSecond.dx;
+                        final dy = details.velocity.pixelsPerSecond.dy;
+                        if (dx.abs() > dy.abs()) {
+                          _onSwipe(dx > 0 ? 'right' : 'left');
+                        } else {
+                          _onSwipe(dy > 0 ? 'down' : 'up');
+                        }
+                      },
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final size = min(constraints.maxWidth, constraints.maxHeight);
+                          return Center(
+                            child: Container(
+                              width: size,
+                              height: size,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F0F23),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: widget.gameColor.withValues(alpha: 0.3)),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CustomPaint(
+                                  size: Size(size, size),
+                                  painter: _SnakePainter(
+                                    snake: _snake,
+                                    food: _food,
+                                    gridSize: _gridSize,
+                                    gameColor: widget.gameColor,
+                                    moveProgress: _moveProgress,
+                                    prevPositions: _prevPositions,
+                                    nextPositions: _nextPositions,
+                                    foodPulse: _foodPulse,
+                                    emitter: _emitter,
+                                    trail: _trail,
+                                    shake: _shake,
+                                    redFlash: _redFlash,
+                                    floatingTexts: _floatingTexts,
+                                    gameTime: _gameTime,
+                                    headDirX: _headDirX(),
+                                    headDirY: _headDirY(),
+                                    powerUpPickup: _currentPowerUp,
+                                    powerUpActive: _powerUpService.isActive(PowerUpType.speedBoost),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _dirBtn(Icons.keyboard_arrow_up, () => _onSwipe('up')),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _dirBtn(Icons.keyboard_arrow_left, () => _onSwipe('left')),
+                      const SizedBox(width: 16),
+                      _dirBtn(Icons.keyboard_arrow_down, () => _onSwipe('down')),
+                      const SizedBox(width: 16),
+                      _dirBtn(Icons.keyboard_arrow_right, () => _onSwipe('right')),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: GestureDetector(
-                  onPanEnd: (details) {
-                    final dx = details.velocity.pixelsPerSecond.dx;
-                    final dy = details.velocity.pixelsPerSecond.dy;
-                    if (dx.abs() > dy.abs()) {
-                      _onSwipe(dx > 0 ? 'right' : 'left');
-                    } else {
-                      _onSwipe(dy > 0 ? 'down' : 'up');
-                    }
-                  },
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final size = min(constraints.maxWidth, constraints.maxHeight);
-                      return Center(
-                        child: Container(
-                          width: size,
-                          height: size,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F0F23),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: widget.gameColor.withValues(alpha: 0.3)),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: CustomPaint(
-                              size: Size(size, size),
-                              painter: _SnakePainter(
-                                snake: _snake,
-                                food: _food,
-                                gridSize: _gridSize,
-                                gameColor: widget.gameColor,
-                                moveProgress: _moveProgress,
-                                prevPositions: _prevPositions,
-                                nextPositions: _nextPositions,
-                                foodPulse: _foodPulse,
-                                emitter: _emitter,
-                                trail: _trail,
-                                shake: _shake,
-                                redFlash: _redFlash,
-                                floatingTexts: _floatingTexts,
-                                gameTime: _gameTime,
-                                headDirX: _headDirX(),
-                                headDirY: _headDirY(),
+            if (_flyingPowerUp != null)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: AlwaysStoppedAnimation(0),
+                    builder: (context, _) {
+                      final fp = _flyingPowerUp!;
+                      final t = (fp.elapsed / 0.4).clamp(0.0, 1.0);
+                      final ease = 1 - pow(1 - t, 3);
+                      final startX = fp.startPos.dx;
+                      final startY = fp.startPos.dy;
+                      final endX = MediaQuery.of(context).size.width - 50;
+                      final endY = 60.0;
+                      final curX = startX + (endX - startX) * ease;
+                      final curY = startY + (endY - startY) * ease;
+                      final scale = 1 - t * 0.4;
+                      final alpha = (1 - t).clamp(0.0, 1.0);
+
+                      return Positioned(
+                        left: curX - 16,
+                        top: curY - 16,
+                        child: Transform.scale(
+                          scale: scale,
+                          child: Opacity(
+                            opacity: alpha,
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: fp.powerUp.color.withValues(alpha: 0.3),
+                                shape: BoxShape.circle,
                               ),
+                              child: Icon(fp.powerUp.icon, color: Colors.white, size: 18),
                             ),
                           ),
                         ),
@@ -396,29 +640,6 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _dirBtn(Icons.keyboard_arrow_up, () => _onSwipe('up')),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _dirBtn(Icons.keyboard_arrow_left, () => _onSwipe('left')),
-                  const SizedBox(width: 16),
-                  _dirBtn(Icons.keyboard_arrow_down, () => _onSwipe('down')),
-                  const SizedBox(width: 16),
-                  _dirBtn(Icons.keyboard_arrow_right, () => _onSwipe('right')),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -459,7 +680,9 @@ class _FloatingText {
   double py;
   double life = 0;
   final double maxLife = 0.7;
-  _FloatingText({required this.px, required this.py});
+  final String text;
+  final Color color;
+  _FloatingText({required this.px, required this.py, this.text = '+1', this.color = const Color(0xFFFFD700)});
 }
 
 class _ExplodingSeg {
@@ -467,6 +690,24 @@ class _ExplodingSeg {
   double delay;
   bool done = false;
   _ExplodingSeg({required this.position, required this.delay});
+}
+
+class _PowerUpPickup {
+  final PowerUp powerUp;
+  final int x;
+  final int y;
+  double life = 0;
+  bool collected = false;
+
+  _PowerUpPickup({required this.powerUp, required this.x, required this.y});
+}
+
+class _FlyingPowerUp {
+  final PowerUp powerUp;
+  final Offset startPos;
+  double elapsed;
+
+  _FlyingPowerUp({required this.powerUp, required this.startPos, required this.elapsed});
 }
 
 class _SnakePainter extends CustomPainter {
@@ -486,6 +727,8 @@ class _SnakePainter extends CustomPainter {
   final double gameTime;
   final int headDirX;
   final int headDirY;
+  final _PowerUpPickup? powerUpPickup;
+  final bool powerUpActive;
 
   _SnakePainter({
     required this.snake,
@@ -504,6 +747,8 @@ class _SnakePainter extends CustomPainter {
     required this.gameTime,
     required this.headDirX,
     required this.headDirY,
+    this.powerUpPickup,
+    this.powerUpActive = false,
   });
 
   @override
@@ -515,9 +760,10 @@ class _SnakePainter extends CustomPainter {
 
     _drawGrid(canvas, size, cellSize);
     _drawFood(canvas, cellSize);
+    _drawPowerUpPickup(canvas, cellSize);
     _drawSnake(canvas, cellSize);
     _drawParticles(canvas);
-    _drawFloatingTexts(canvas, cellSize);
+    _drawFloatingTexts(canvas);
     _drawRedFlash(canvas, size);
 
     canvas.restore();
@@ -590,10 +836,60 @@ class _SnakePainter extends CustomPainter {
     );
   }
 
+  void _drawPowerUpPickup(Canvas canvas, double cellSize) {
+    final pu = powerUpPickup;
+    if (pu == null || pu.collected) return;
+
+    final px = pu.x * cellSize + cellSize / 2;
+    final py = pu.y * cellSize + cellSize / 2;
+    final bob = sin(gameTime * 4) * cellSize * 0.08;
+    final pulse = 0.85 + 0.15 * sin(gameTime * 5);
+    final color = pu.powerUp.color;
+
+    // outer glow
+    final auraPaint = Paint()
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+      ..color = color.withValues(alpha: 0.3 * pulse);
+    canvas.drawCircle(Offset(px, py + bob), cellSize * 0.5 * pulse, auraPaint);
+
+    // ring
+    final ringPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = color.withValues(alpha: 0.5 * pulse);
+    canvas.drawCircle(Offset(px, py + bob), cellSize * 0.4 * pulse, ringPaint);
+
+    // fill
+    final bgPaint = Paint()
+      ..color = color.withValues(alpha: 0.15)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    canvas.drawCircle(Offset(px, py + bob), cellSize * 0.35 * pulse, bgPaint);
+
+    _drawIconOnCanvas(canvas, pu.powerUp.icon, Offset(px, py + bob), cellSize * 0.35, color);
+  }
+
+  void _drawIconOnCanvas(Canvas canvas, IconData icon, Offset center, double size, Color color) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    final textScaler = size / 24;
+    final tp = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 20 * textScaler,
+          fontFamily: icon.fontFamily,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+    canvas.restore();
+  }
+
   void _drawSnake(Canvas canvas, double cellSize) {
     if (snake.isEmpty) return;
 
-    // interpolate positions
     final positions = <Offset>[];
     for (int i = 0; i < snake.length; i++) {
       final px = i < prevPositions.length ? prevPositions[i].dx : snake[i].x;
@@ -605,18 +901,15 @@ class _SnakePainter extends CustomPainter {
       positions.add(Offset(lx * cellSize + cellSize / 2, ly * cellSize + cellSize / 2));
     }
 
-    // trail behind tail
     if (snake.length >= 2) {
       trail.draw(canvas, gameColor.withValues(alpha: 0.3), cellSize * 0.3);
     }
     trail.addPoint(positions.last);
 
-    // body
     for (int i = snake.length - 1; i >= 0; i--) {
       final t = i / max(snake.length - 1, 1);
       final pos = positions[i];
 
-      // body wave
       var wx = pos.dx;
       var wy = pos.dy;
       if (i > 0) {
@@ -630,12 +923,20 @@ class _SnakePainter extends CustomPainter {
 
       final segSize = i == 0 ? cellSize * 0.85 : cellSize * (0.75 - t * 0.2);
 
-      // gradient
+      Color segColor;
+      if (i == 0 && powerUpActive) {
+        segColor = const Color(0xFFFF9800).withValues(alpha: 1);
+      } else if (i == 0) {
+        segColor = gameColor.withValues(alpha: 1);
+      } else {
+        segColor = gameColor.withValues(alpha: 0.9 - t * 0.5);
+      }
+
       final gradient = RadialGradient(
         colors: [
-          gameColor.withValues(alpha: i == 0 ? 1 : 0.9 - t * 0.5),
-          gameColor.withValues(alpha: i == 0 ? 0.7 : 0.3 - t * 0.25),
-          gameColor.withValues(alpha: 0.05),
+          segColor,
+          segColor.withValues(alpha: i == 0 ? 0.7 : 0.3 - t * 0.25),
+          segColor.withValues(alpha: 0.05),
         ],
         stops: const [0, 0.6, 1],
       );
@@ -651,7 +952,6 @@ class _SnakePainter extends CustomPainter {
       );
     }
 
-    // head eyes
     if (snake.isNotEmpty) {
       final headPos = positions[0];
       final eyeOff = cellSize * 0.18;
@@ -682,22 +982,22 @@ class _SnakePainter extends CustomPainter {
     emitter.draw(canvas);
   }
 
-  void _drawFloatingTexts(Canvas canvas, double cellSize) {
+  void _drawFloatingTexts(Canvas canvas) {
     for (final ft in floatingTexts) {
       final progress = ft.life / ft.maxLife;
       final alpha = (1 - progress).clamp(0.0, 1.0);
-      final yOff = -20 * progress;
+      final yOff = -25 * progress;
 
       final tp = TextPainter(
         text: TextSpan(
-          text: '+1',
+          text: ft.text,
           style: TextStyle(
-            color: const Color(0xFFFFD700).withValues(alpha: alpha),
-            fontSize: 16,
+            color: ft.color.withValues(alpha: alpha),
+            fontSize: ft.text.length > 2 ? 14 : 18,
             fontWeight: FontWeight.bold,
             shadows: [
               Shadow(
-                color: const Color(0xFFFFD700).withValues(alpha: alpha * 0.5),
+                color: ft.color.withValues(alpha: alpha * 0.5),
                 blurRadius: 8,
               ),
             ],
