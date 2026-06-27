@@ -77,18 +77,18 @@ class GameService {
     final prefs = await SharedPreferences.getInstance();
     currentXP = prefs.getInt(_xpKey) ?? 0;
     final badgesData = prefs.getString(_badgesKey);
-    if (badgesData != null) {
-      unlockedBadges = List<String>.from(jsonDecode(badgesData) as List);
-    }
+    unlockedBadges = badgesData != null
+        ? List<String>.from(jsonDecode(badgesData) as List)
+        : [];
     final scoresData = prefs.getString(_highScoresKey);
-    if (scoresData != null) {
-      final decoded = jsonDecode(scoresData) as Map<String, dynamic>;
-      highScores = decoded.map((k, v) => MapEntry(k, (v as num).toInt()));
-    }
+    highScores = scoresData != null
+        ? (jsonDecode(scoresData) as Map<String, dynamic>)
+            .map((k, v) => MapEntry(k, (v as num).toInt()))
+        : {};
     final playedData = prefs.getString(_playedGamesKey);
-    if (playedData != null) {
-      playedGames = List<String>.from(jsonDecode(playedData) as List);
-    }
+    playedGames = playedData != null
+        ? List<String>.from(jsonDecode(playedData) as List)
+        : [];
     hasSeenOnboarding = prefs.getBool(_onboardingKey) ?? false;
     _lastDailyDate = prefs.getString(_dailyDateKey);
     username = prefs.getString(_usernameKey) ?? 'Player';
@@ -100,9 +100,9 @@ class GameService {
 
     coins = prefs.getInt(_coinsKey) ?? 0;
     final cosmeticsData = prefs.getString(_unlockedCosmeticsKey);
-    if (cosmeticsData != null) {
-      unlockedCosmetics = List<String>.from(jsonDecode(cosmeticsData) as List);
-    }
+    unlockedCosmetics = cosmeticsData != null
+        ? List<String>.from(jsonDecode(cosmeticsData) as List)
+        : [];
     if (!unlockedCosmetics.contains('theme_default')) {
       unlockedCosmetics.add('theme_default');
     }

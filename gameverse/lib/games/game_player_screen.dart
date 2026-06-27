@@ -412,7 +412,7 @@ class _FloatingCoins extends StatefulWidget {
 
 class _FloatingCoinsState extends State<_FloatingCoins>
     with TickerProviderStateMixin {
-  late final List<_CoinAnim> _coins;
+  final List<_CoinAnim> _coins = [];
 
   @override
   void initState() {
