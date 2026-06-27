@@ -14,6 +14,7 @@ import 'farm_life_game.dart';
 import 'build_world_game.dart';
 import 'pixel_battle_game.dart';
 import 'classic_snake_game.dart';
+import 'brick_breaker_game.dart';
 import '../widgets/achievement_overlay.dart';
 import '../widgets/share_preview_dialog.dart';
 
@@ -320,6 +321,12 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
         );
       case 'pixel_battle':
         return PixelBattleGame(
+          gameColor: widget.game.color,
+          onScoreChanged: _onScoreChanged,
+          onGameOver: _onGameOver,
+        );
+      case 'brick_breaker':
+        return BrickBreakerGame(
           gameColor: widget.game.color,
           onScoreChanged: _onScoreChanged,
           onGameOver: _onGameOver,

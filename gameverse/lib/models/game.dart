@@ -197,4 +197,17 @@ const List<Game> allGames = [
     ratingCount: 3123,
     xpReward: 60,
   ),
+  Game(
+    id: 'brick_breaker',
+    title: 'Brick Breaker',
+    description: 'Break through colorful bricks with a bouncing ball and paddle. How many rows can you clear before losing all your lives?',
+    categoryId: 'action',
+    color: Color(0xFFE53935),
+    icon: Icons.grid_on,
+    playerCount: 1245,
+    visits: 45678,
+    rating: 4.3,
+    ratingCount: 567,
+    xpReward: 50,
+  ),
 ];
