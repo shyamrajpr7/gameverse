@@ -11,6 +11,7 @@ import 'profile_screen.dart';
 import 'leaderboard_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
+import 'shop_screen.dart';
 import '../utils/page_transitions.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -114,6 +115,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.white.withValues(alpha: 0.1),
                 ),
                 child: Icon(Icons.settings, color: Colors.white.withValues(alpha: 0.7)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                AudioService().play(SoundType.click);
+                HapticService.light();
+                Navigator.push(context, PageTransition.fadeScale(const ShopScreen()));
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                  border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
+                ),
+                child: const Icon(Icons.shopping_bag, color: Color(0xFFFFD700)),
               ),
             ),
             const SizedBox(width: 8),

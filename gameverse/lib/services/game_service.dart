@@ -45,6 +45,10 @@ class GameService {
   static const String _currentStreakKey = 'gameverse_streak';
   static const String _bestStreakKey = 'gameverse_best_streak';
   static const String _lastPlayedDateKey = 'gameverse_last_played';
+  static const String _coinsKey = 'gameverse_coins';
+  static const String _unlockedCosmeticsKey = 'gameverse_unlocked_cosmetics';
+  static const String _equippedThemeKey = 'gameverse_equipped_theme';
+  static const String _equippedSnakeSkinKey = 'gameverse_equipped_snake_skin';
 
   int currentXP = 0;
   List<String> unlockedBadges = [];
@@ -60,6 +64,14 @@ class GameService {
   int currentStreak = 0;
   int bestStreak = 0;
   String? _lastPlayedDate;
+
+  // ── Coins & Cosmetics ──
+  int coins = 0;
+  List<String> unlockedCosmetics = ['theme_default'];
+  String equippedTheme = 'default';
+  String equippedSnakeSkin = 'default';
+
+  VoidCallback? onDataChanged;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -85,6 +97,17 @@ class GameService {
     currentStreak = prefs.getInt(_currentStreakKey) ?? 0;
     bestStreak = prefs.getInt(_bestStreakKey) ?? 0;
     _lastPlayedDate = prefs.getString(_lastPlayedDateKey);
+
+    coins = prefs.getInt(_coinsKey) ?? 0;
+    final cosmeticsData = prefs.getString(_unlockedCosmeticsKey);
+    if (cosmeticsData != null) {
+      unlockedCosmetics = List<String>.from(jsonDecode(cosmeticsData) as List);
+    }
+    if (!unlockedCosmetics.contains('theme_default')) {
+      unlockedCosmetics.add('theme_default');
+    }
+    equippedTheme = prefs.getString(_equippedThemeKey) ?? 'default';
+    equippedSnakeSkin = prefs.getString(_equippedSnakeSkinKey) ?? 'default';
   }
 
   Future<void> _save() async {
@@ -101,6 +124,12 @@ class GameService {
     await prefs.setInt(_currentStreakKey, currentStreak);
     await prefs.setInt(_bestStreakKey, bestStreak);
     await prefs.setString(_lastPlayedDateKey, _lastPlayedDate ?? '');
+
+    await prefs.setInt(_coinsKey, coins);
+    await prefs.setString(_unlockedCosmeticsKey, jsonEncode(unlockedCosmetics));
+    await prefs.setString(_equippedThemeKey, equippedTheme);
+    await prefs.setString(_equippedSnakeSkinKey, equippedSnakeSkin);
+    onDataChanged?.call();
   }
 
   Future<void> updateUsername(String name) async {
@@ -260,6 +289,38 @@ class GameService {
 
   Future<void> markOnboardingSeen() async {
     hasSeenOnboarding = true;
+    await _save();
+  }
+
+  // ── Coins & Cosmetics ──
+
+  Future<void> addCoins(int amount) async {
+    coins += amount;
+    await _save();
+  }
+
+  Future<bool> spendCoins(int amount) async {
+    if (coins < amount) return false;
+    coins -= amount;
+    await _save();
+    return true;
+  }
+
+  bool isCosmeticUnlocked(String id) => unlockedCosmetics.contains(id);
+
+  Future<void> unlockCosmetic(String id) async {
+    if (!unlockedCosmetics.contains(id)) {
+      unlockedCosmetics.add(id);
+      await _save();
+    }
+  }
+
+  Future<void> equipCosmetic(String id) async {
+    if (id.startsWith('snake_')) {
+      equippedSnakeSkin = id;
+    } else if (id.startsWith('theme_')) {
+      equippedTheme = id;
+    }
     await _save();
   }
 }

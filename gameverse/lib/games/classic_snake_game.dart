@@ -8,6 +8,7 @@ import '../utils/particle_system.dart';
 import '../models/power_up.dart';
 import '../services/power_up_service.dart';
 import '../widgets/power_up_widget.dart';
+import '../services/game_service.dart';
 
 class ClassicSnakeGame extends StatefulWidget {
   final Color gameColor;
@@ -546,26 +547,27 @@ class _ClassicSnakeGameState extends State<ClassicSnakeGame>
                                 borderRadius: BorderRadius.circular(12),
                                 child: CustomPaint(
                                   size: Size(size, size),
-                                  painter: _SnakePainter(
-                                    snake: _snake,
-                                    food: _food,
-                                    gridSize: _gridSize,
-                                    gameColor: widget.gameColor,
-                                    moveProgress: _moveProgress,
-                                    prevPositions: _prevPositions,
-                                    nextPositions: _nextPositions,
-                                    foodPulse: _foodPulse,
-                                    emitter: _emitter,
-                                    trail: _trail,
-                                    shake: _shake,
-                                    redFlash: _redFlash,
-                                    floatingTexts: _floatingTexts,
-                                    gameTime: _gameTime,
-                                    headDirX: _headDirX(),
-                                    headDirY: _headDirY(),
-                                    powerUpPickup: _currentPowerUp,
-                                    powerUpActive: _powerUpService.isActive(PowerUpType.speedBoost),
-                                  ),
+                                    painter: _SnakePainter(
+                                      snake: _snake,
+                                      food: _food,
+                                      gridSize: _gridSize,
+                                      gameColor: widget.gameColor,
+                                      moveProgress: _moveProgress,
+                                      prevPositions: _prevPositions,
+                                      nextPositions: _nextPositions,
+                                      foodPulse: _foodPulse,
+                                      emitter: _emitter,
+                                      trail: _trail,
+                                      shake: _shake,
+                                      redFlash: _redFlash,
+                                      floatingTexts: _floatingTexts,
+                                      gameTime: _gameTime,
+                                      headDirX: _headDirX(),
+                                      headDirY: _headDirY(),
+                                      powerUpPickup: _currentPowerUp,
+                                      powerUpActive: _powerUpService.isActive(PowerUpType.speedBoost),
+                                      snakeSkin: GameService().equippedSnakeSkin,
+                                    ),
                                 ),
                               ),
                             ),
@@ -729,6 +731,7 @@ class _SnakePainter extends CustomPainter {
   final int headDirY;
   final _PowerUpPickup? powerUpPickup;
   final bool powerUpActive;
+  final String snakeSkin;
 
   _SnakePainter({
     required this.snake,
@@ -749,6 +752,7 @@ class _SnakePainter extends CustomPainter {
     required this.headDirY,
     this.powerUpPickup,
     this.powerUpActive = false,
+    this.snakeSkin = 'default',
   });
 
   @override
@@ -926,10 +930,16 @@ class _SnakePainter extends CustomPainter {
       Color segColor;
       if (i == 0 && powerUpActive) {
         segColor = const Color(0xFFFF9800).withValues(alpha: 1);
-      } else if (i == 0) {
-        segColor = gameColor.withValues(alpha: 1);
+      } else if (snakeSkin == 'snake_rainbow') {
+        final hue = (gameTime * 120 + i * 20) % 360;
+        segColor = HSVColor.fromAHSV(1, hue, 0.9, 1).toColor();
+      } else if (snakeSkin == 'snake_cyberpunk') {
+        final lerp = (i / max(snake.length - 1, 1)).clamp(0.0, 1.0);
+        segColor = Color.lerp(const Color(0xFF6C5CE7), const Color(0xFF00BCD4), lerp)!;
       } else {
-        segColor = gameColor.withValues(alpha: 0.9 - t * 0.5);
+        segColor = i == 0
+            ? gameColor.withValues(alpha: 1)
+            : gameColor.withValues(alpha: 0.9 - t * 0.5);
       }
 
       final gradient = RadialGradient(

@@ -4,6 +4,19 @@ import 'screens/onboarding_screen.dart';
 import 'services/audio_service.dart';
 import 'services/game_service.dart';
 
+Color _themeColor(String id) {
+  switch (id) {
+    case 'theme_crimson':
+      return const Color(0xFFE53935);
+    case 'theme_neon_blue':
+      return const Color(0xFF00BCD4);
+    case 'theme_forest_green':
+      return const Color(0xFF43A047);
+    default:
+      return const Color(0xFFFFD700);
+  }
+}
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const GameVerseApp());
@@ -27,10 +40,14 @@ class _GameVerseAppState extends State<GameVerseApp> {
     _gameService.load().then((_) {
       if (mounted) setState(() => _loaded = true);
     });
+    _gameService.onDataChanged = () {
+      if (mounted) setState(() {});
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+    final accent = _themeColor(_gameService.equippedTheme);
     return MaterialApp(
       title: 'GameVerse',
       debugShowCheckedModeBanner: false,
@@ -38,7 +55,7 @@ class _GameVerseAppState extends State<GameVerseApp> {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0A0A1A),
         colorScheme: ColorScheme.dark(
-          primary: const Color(0xFFFFD700),
+          primary: accent,
           secondary: const Color(0xFF6C5CE7),
           surface: const Color(0xFF0F0F23),
         ),
