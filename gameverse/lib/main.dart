@@ -3,6 +3,7 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/audio_service.dart';
 import 'services/game_service.dart';
+import 'services/multiplayer_service.dart';
 
 Color _themeColor(String id) {
   switch (id) {
@@ -37,7 +38,10 @@ class _GameVerseAppState extends State<GameVerseApp> {
   void initState() {
     super.initState();
     AudioService().init();
-    _gameService.load().then((_) {
+    Future.wait([
+      _gameService.load(),
+      MultiplayerService().load(),
+    ]).then((_) {
       if (mounted) setState(() => _loaded = true);
     });
     _gameService.onDataChanged = () {

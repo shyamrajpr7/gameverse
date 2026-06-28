@@ -5,6 +5,7 @@ import '../services/game_service.dart';
 import '../services/haptic_service.dart';
 import '../games/game_player_screen.dart';
 import '../utils/page_transitions.dart';
+import 'multiplayer_setup_screen.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final Game game;
@@ -152,6 +153,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildPlayButton(),
+            if (_isMultiplayerCompatible) ...[
+              const SizedBox(height: 12),
+              _buildMultiplayerButton(),
+            ],
             const SizedBox(height: 24),
             _buildStatsRow(),
             const SizedBox(height: 24),
@@ -218,6 +223,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     );
   }
 
+  static const _multiplayerGameIds = [
+    'racing_rivals',
+    'classic_snake',
+    'brick_breaker',
+    'pixel_battle',
+  ];
+
+  bool get _isMultiplayerCompatible =>
+      _multiplayerGameIds.contains(widget.game.id);
+
   Widget _buildPlayButton() {
     return PulsingGlow(
       color: widget.game.color,
@@ -241,6 +256,32 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               Text(_hasPlayed ? 'Play Again' : 'Play Now', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _playMultiplayer() {
+    AudioService().play(SoundType.swipe);
+    HapticService.medium();
+    Navigator.push(
+      context,
+      PageTransition.slideUp(MultiplayerSetupScreen(game: widget.game)),
+    );
+  }
+
+  Widget _buildMultiplayerButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: _playMultiplayer,
+        icon: const Icon(Icons.people, size: 20),
+        label: const Text('Multiplayer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: widget.game.color,
+          side: BorderSide(color: widget.game.color.withValues(alpha: 0.5)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );
