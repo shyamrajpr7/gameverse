@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../models/quest.dart';
 import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
@@ -308,6 +309,10 @@ class _ShopItemCardState extends State<_ShopItemCard>
     final success = await widget.gameService.spendCoins(widget.item.cost);
     if (!mounted) return;
     if (success) {
+      await widget.gameService.updateQuestProgress(
+        QuestTargetType.spendCoins,
+        widget.item.cost,
+      );
       await widget.gameService.unlockCosmetic(widget.item.id);
       AudioService().play(SoundType.achievement);
       HapticService.medium();

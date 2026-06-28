@@ -386,8 +386,15 @@ class GameService {
   }
 
   Future<String?> addXP(int amount) async {
+    final oldLevel = getLevel(currentXP);
     currentXP += amount;
     await _save();
+
+    final newLevel = getLevel(currentXP);
+    if (newLevel > oldLevel) {
+      await updateQuestProgress(QuestTargetType.levelUp, newLevel - oldLevel);
+    }
+
     final badge = _checkBadges();
     if (badge != null && !unlockedBadges.contains(badge)) {
       unlockedBadges.add(badge);

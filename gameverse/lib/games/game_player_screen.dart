@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
+import '../models/quest.dart';
 import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
@@ -61,6 +62,12 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
     await _gameService.updateHighScore(widget.game.id, finalScore);
     _coinsEarned = (finalScore ~/ 5) + 5;
     await _gameService.addCoins(_coinsEarned);
+
+    await _gameService.updateQuestProgress(QuestTargetType.playGames, 1);
+    await _gameService.updateQuestProgress(QuestTargetType.playGames, 1, gameId: widget.game.id);
+    await _gameService.updateQuestProgress(QuestTargetType.reachScore, finalScore);
+    await _gameService.updateQuestProgress(QuestTargetType.reachScore, finalScore, gameId: widget.game.id);
+    await _gameService.updateQuestProgress(QuestTargetType.earnCoins, _coinsEarned);
     final baseXp = widget.game.xpReward + (finalScore ~/ 10);
     final multiplier = _gameService.dailyMultiplier(widget.game.id);
     final badge = await _gameService.addXP(baseXp * multiplier);
