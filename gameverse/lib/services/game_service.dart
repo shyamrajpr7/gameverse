@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/game.dart';
+import '../models/quest.dart';
 
 class GameBadge {
   final String id;
@@ -49,6 +50,8 @@ class GameService {
   static const String _unlockedCosmeticsKey = 'gameverse_unlocked_cosmetics';
   static const String _equippedThemeKey = 'gameverse_equipped_theme';
   static const String _equippedSnakeSkinKey = 'gameverse_equipped_snake_skin';
+  static const String _questsKey = 'gameverse_active_quests';
+  static const String _lastQuestRefreshKey = 'gameverse_last_quest_refresh';
 
   int currentXP = 0;
   List<String> unlockedBadges = [];
@@ -70,6 +73,9 @@ class GameService {
   List<String> unlockedCosmetics = ['theme_default'];
   String equippedTheme = 'default';
   String equippedSnakeSkin = 'default';
+
+  List<Quest> activeQuests = [];
+  String? _lastQuestRefreshDate;
 
   VoidCallback? onDataChanged;
 
@@ -108,6 +114,14 @@ class GameService {
     }
     equippedTheme = prefs.getString(_equippedThemeKey) ?? 'default';
     equippedSnakeSkin = prefs.getString(_equippedSnakeSkinKey) ?? 'default';
+
+    _lastQuestRefreshDate = prefs.getString(_lastQuestRefreshKey);
+    final questsData = prefs.getString(_questsKey);
+    if (questsData != null) {
+      final list = jsonDecode(questsData) as List;
+      activeQuests = list.map((e) => Quest.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    await checkAndRefreshQuests();
   }
 
   Future<void> _save() async {
@@ -129,6 +143,8 @@ class GameService {
     await prefs.setString(_unlockedCosmeticsKey, jsonEncode(unlockedCosmetics));
     await prefs.setString(_equippedThemeKey, equippedTheme);
     await prefs.setString(_equippedSnakeSkinKey, equippedSnakeSkin);
+    await prefs.setString(_lastQuestRefreshKey, _lastQuestRefreshDate ?? '');
+    await prefs.setString(_questsKey, jsonEncode(activeQuests.map((q) => q.toJson()).toList()));
     onDataChanged?.call();
   }
 
@@ -164,6 +180,161 @@ class GameService {
   Future<void> markDailyCompleted() async {
     _lastDailyDate = _todayString();
     await _save();
+  }
+
+  Future<void> checkAndRefreshQuests() async {
+    if (activeQuests.isEmpty || _lastQuestRefreshDate != _todayString()) {
+      _generateQuests();
+      await _save();
+    }
+  }
+
+  void _generateQuests() {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+    const dailyPool = [
+      (
+        title: 'First Win',
+        description: 'Play 1 game of any type',
+        targetType: QuestTargetType.playGames,
+        targetValue: 1,
+        coinReward: 20,
+        xpReward: 50,
+        gameId: null,
+      ),
+      (
+        title: 'Snake Master',
+        description: 'Score 50+ in Classic Snake',
+        targetType: QuestTargetType.reachScore,
+        targetValue: 50,
+        coinReward: 30,
+        xpReward: 60,
+        gameId: 'classic_snake',
+      ),
+      (
+        title: 'Brick Breaker',
+        description: 'Score 100+ in Brick Breaker',
+        targetType: QuestTargetType.reachScore,
+        targetValue: 100,
+        coinReward: 30,
+        xpReward: 60,
+        gameId: 'brick_breaker',
+      ),
+      (
+        title: 'Gold Digger',
+        description: 'Earn 30 coins in games',
+        targetType: QuestTargetType.earnCoins,
+        targetValue: 30,
+        coinReward: 15,
+        xpReward: 40,
+        gameId: null,
+      ),
+      (
+        title: 'Big Spender',
+        description: 'Spend 100 coins in the Shop',
+        targetType: QuestTargetType.spendCoins,
+        targetValue: 100,
+        coinReward: 25,
+        xpReward: 50,
+        gameId: null,
+      ),
+    ];
+
+    const weeklyPool = [
+      (
+        title: 'Hardcore Gamer',
+        description: 'Play 10 games',
+        targetType: QuestTargetType.playGames,
+        targetValue: 10,
+        coinReward: 100,
+        xpReward: 250,
+        gameId: null,
+      ),
+      (
+        title: 'High Roller',
+        description: 'Earn 200 coins',
+        targetType: QuestTargetType.earnCoins,
+        targetValue: 200,
+        coinReward: 80,
+        xpReward: 200,
+        gameId: null,
+      ),
+      (
+        title: 'Champion',
+        description: 'Reach score 200 in any game',
+        targetType: QuestTargetType.reachScore,
+        targetValue: 200,
+        coinReward: 100,
+        xpReward: 250,
+        gameId: null,
+      ),
+    ];
+
+    final dailies = List.of(dailyPool)..shuffle();
+    final selectedDailies = dailies.take(3).toList();
+
+    final weeklies = List.of(weeklyPool)..shuffle();
+    final selectedWeeklies = weeklies.take(2).toList();
+
+    activeQuests = [
+      ...selectedDailies.asMap().entries.map((e) => Quest(
+            id: 'daily_${timestamp}_${e.key}',
+            title: e.value.title,
+            description: e.value.description,
+            type: QuestType.daily,
+            targetType: e.value.targetType,
+            targetValue: e.value.targetValue,
+            coinReward: e.value.coinReward,
+            xpReward: e.value.xpReward,
+            gameId: e.value.gameId,
+          )),
+      ...selectedWeeklies.asMap().entries.map((e) => Quest(
+            id: 'weekly_${timestamp}_${e.key}',
+            title: e.value.title,
+            description: e.value.description,
+            type: QuestType.weekly,
+            targetType: e.value.targetType,
+            targetValue: e.value.targetValue,
+            coinReward: e.value.coinReward,
+            xpReward: e.value.xpReward,
+            gameId: e.value.gameId,
+          )),
+    ];
+    _lastQuestRefreshDate = _todayString();
+  }
+
+  Future<void> updateQuestProgress(QuestTargetType targetType, int increment, {String? gameId}) async {
+    bool changed = false;
+    for (int i = 0; i < activeQuests.length; i++) {
+      final quest = activeQuests[i];
+      if (quest.isCompleted) continue;
+      if (quest.targetType != targetType) continue;
+      if (quest.gameId != null && quest.gameId != gameId) continue;
+
+      final newValue = (quest.currentValue + increment).clamp(0, quest.targetValue);
+      activeQuests[i] = quest.copyWith(currentValue: newValue);
+      changed = true;
+    }
+    if (changed) {
+      await _save();
+    }
+  }
+
+  Future<Quest?> claimQuestReward(String questId) async {
+    final index = activeQuests.indexWhere((q) => q.id == questId);
+    if (index == -1) return null;
+
+    final quest = activeQuests[index];
+    if (!quest.isCompleted || quest.isClaimed) return null;
+
+    final claimed = quest.copyWith(isClaimed: true);
+    activeQuests[index] = claimed;
+
+    await addCoins(quest.coinReward);
+    await addXP(quest.xpReward);
+    await _save();
+
+    return claimed;
   }
 
   IconData get avatarIcon => avatarIcons[avatarIndex];
