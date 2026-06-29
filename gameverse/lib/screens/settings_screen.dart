@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
+import '../services/music_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,6 +15,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _soundMuted = AudioService().isMuted;
   bool _hapticsEnabled = HapticService().isHapticsEnabled;
+  bool _musicMuted = MusicService().isMuted;
+  double _musicVolume = MusicService().volume;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +42,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       AudioService().toggleMute();
                     },
                   ),
+                  const SizedBox(height: 8),
+                  _buildToggleTile(
+                    icon: Icons.music_note,
+                    title: 'Background Music',
+                    subtitle: 'Enable or disable ambient music',
+                    value: !_musicMuted,
+                    onChanged: (v) {
+                      setState(() => _musicMuted = !v);
+                      MusicService().toggleMute();
+                      if (!_musicMuted) {
+                        MusicService().play(MusicTrack.menu);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _buildVolumeSlider(),
                   const SizedBox(height: 8),
                   _buildToggleTile(
                     icon: Icons.vibration,
@@ -201,6 +220,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Text('Built with Flutter', style: TextStyle(fontSize: 11, color: Color(0xFF6C5CE7), fontWeight: FontWeight.w500)),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVolumeSlider() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withValues(alpha: 0.05),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 4),
+            child: Row(
+              children: [
+                Icon(Icons.volume_down, color: const Color(0xFFFFD700), size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Music Volume',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Slider(
+            value: _musicVolume,
+            min: 0.0,
+            max: 1.0,
+            divisions: 20,
+            activeColor: const Color(0xFFFFD700),
+            inactiveColor: Colors.white.withValues(alpha: 0.1),
+            onChanged: (v) {
+              setState(() => _musicVolume = v);
+              MusicService().setVolume(v);
+            },
           ),
         ],
       ),

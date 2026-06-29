@@ -5,6 +5,7 @@ import '../models/quest.dart';
 import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
+import '../services/music_service.dart';
 import 'sky_jumper_game.dart';
 import 'puzzle_quest_game.dart';
 import 'racing_rivals_game.dart';
@@ -40,12 +41,36 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
   @override
   void initState() {
     super.initState();
+    _playGameMusic();
     _gameService.load().then((_) {
       if (!mounted) return;
       if (!_gameService.hasPlayed(widget.game.id)) {
         _showTutorial();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    MusicService().play(MusicTrack.menu);
+    super.dispose();
+  }
+
+  void _playGameMusic() {
+    switch (widget.game.categoryId) {
+      case 'action':
+      case 'racing':
+        MusicService().play(MusicTrack.action);
+        break;
+      case 'puzzle':
+      case 'strategy':
+      case 'adventure':
+      case 'simulation':
+        MusicService().play(MusicTrack.calm);
+        break;
+      default:
+        MusicService().play(MusicTrack.menu);
+    }
   }
 
   void _showTutorial() {
@@ -80,6 +105,7 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
     });
     AudioService().play(SoundType.gameOver);
     HapticService.heavy();
+    MusicService().play(MusicTrack.victory);
     await _gameService.recordGamePlayed(widget.game.id);
     await _gameService.updateHighScore(widget.game.id, finalScore);
     _coinsEarned = (finalScore ~/ 5) + 5;

@@ -3,6 +3,7 @@ import '../models/game.dart';
 import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
+import '../services/music_service.dart';
 import '../widgets/game_card.dart';
 import '../widgets/daily_challenge_card.dart';
 import '../widgets/particle_background.dart';
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _load();
+    MusicService().play(MusicTrack.menu);
   }
 
   Future<void> _load() async {
@@ -130,9 +132,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               _buildIconButton(
-                  AudioService().isMuted ? Icons.volume_off : Icons.volume_up,
+                  AudioService().isMuted || MusicService().isMuted ? Icons.volume_off : Icons.volume_up,
                   () {
                 AudioService().toggleMute();
+                MusicService().toggleMute();
                 setState(() {});
               }),
               const SizedBox(width: 6),

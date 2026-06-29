@@ -6,6 +6,7 @@ import 'screens/onboarding_screen.dart';
 import 'services/audio_service.dart';
 import 'services/game_service.dart';
 import 'services/multiplayer_service.dart';
+import 'services/music_service.dart';
 
 Color _themeColor(String id) {
   switch (id) {
@@ -43,6 +44,7 @@ class _GameVerseAppState extends State<GameVerseApp> {
   void initState() {
     super.initState();
     AudioService().init();
+    MusicService().init();
     Future.wait([
       _gameService.load(),
       MultiplayerService().load(),
