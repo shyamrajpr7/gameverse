@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
+import '../models/game_tutorial.dart';
 import '../models/quest.dart';
 import '../services/audio_service.dart';
 import '../services/game_service.dart';
@@ -17,6 +18,7 @@ import 'pixel_battle_game.dart';
 import 'classic_snake_game.dart';
 import 'brick_breaker_game.dart';
 import '../widgets/achievement_overlay.dart';
+import '../widgets/game_tutorial_overlay.dart';
 import '../widgets/share_preview_dialog.dart';
 
 class GamePlayerScreen extends StatefulWidget {
@@ -38,7 +40,27 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
   @override
   void initState() {
     super.initState();
-    _gameService.load();
+    _gameService.load().then((_) {
+      if (!mounted) return;
+      if (!_gameService.hasPlayed(widget.game.id)) {
+        _showTutorial();
+      }
+    });
+  }
+
+  void _showTutorial() {
+    final tutorial = GameTutorial.all[widget.game.id];
+    if (tutorial == null) return;
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (_, _, _) => GameTutorialOverlay(
+          tutorial: tutorial,
+          onDismiss: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
   }
 
   void _onScoreChanged(int score) {
@@ -156,6 +178,21 @@ class _GamePlayerScreenState extends State<GamePlayerScreen> {
                     SizedBox(width: 8),
                     Text('Play', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: 200,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: _showTutorial,
+                icon: const Icon(Icons.help_outline, size: 18),
+                label: const Text('How to Play', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white.withValues(alpha: 0.6),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
