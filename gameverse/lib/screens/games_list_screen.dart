@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/game.dart';
 import '../widgets/game_card.dart';
+import '../widgets/particle_background.dart';
+import '../widgets/glass_card.dart';
 import 'game_detail_screen.dart';
 import '../utils/page_transitions.dart';
 
@@ -53,16 +55,47 @@ class _GamesListScreenState extends State<GamesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Games', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      body: ParticleBackground(
+        color: const Color(0xFF45B7D1),
+        particleCount: 20,
+        child: Column(
+          children: [
+            _buildHeader(),
+            _buildSearchBar(),
+            _buildFilterRow(),
+            Expanded(child: _buildGamesGrid()),
+          ],
+        ),
       ),
-      body: Column(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 12, 20, 8),
+      child: Row(
         children: [
-          _buildSearchBar(),
-          _buildFilterRow(),
-          Expanded(child: _buildGamesGrid()),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
+              child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'All Games',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );
@@ -70,13 +103,10 @@ class _GamesListScreenState extends State<GamesListScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+      child: GlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        borderRadius: 16,
         child: TextField(
           controller: _searchController,
           onChanged: (v) => setState(() => _searchQuery = v),
@@ -84,10 +114,10 @@ class _GamesListScreenState extends State<GamesListScreen> {
           decoration: InputDecoration(
             hintText: 'Search games...',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-            prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.4)),
+            prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.4), size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.clear, color: Colors.white.withValues(alpha: 0.4)),
+                    icon: Icon(Icons.clear, color: Colors.white.withValues(alpha: 0.4), size: 18),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
@@ -95,7 +125,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
                   )
                 : null,
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
       ),
@@ -111,7 +141,17 @@ class _GamesListScreenState extends State<GamesListScreen> {
           const SizedBox(width: 8),
           _buildFilterChip('Sort', _sortBy ?? 'Relevance', () => _showSortPicker()),
           const Spacer(),
-          Text('${_filteredGames.length} games', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+            child: Text(
+              '${_filteredGames.length} games',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+            ),
+          ),
         ],
       ),
     );
@@ -123,18 +163,23 @@ class _GamesListScreenState extends State<GamesListScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
+          color: Colors.white.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
+            Text(label,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
             const SizedBox(width: 4),
-            Text(value ?? 'All', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(value ?? 'All',
+                style:
+                    const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down, color: Colors.white.withValues(alpha: 0.5), size: 18),
+            Icon(Icons.arrow_drop_down,
+                color: Colors.white.withValues(alpha: 0.5), size: 18),
           ],
         ),
       ),
@@ -154,22 +199,42 @@ class _GamesListScreenState extends State<GamesListScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Filter by Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            const Text('Filter by Category',
+                style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 ActionChip(
-                  label: Text('All', style: TextStyle(color: _selectedCategory == null ? Colors.white : Colors.white60)),
-                  backgroundColor: _selectedCategory == null ? const Color(0xFF6366F1) : Colors.white.withValues(alpha: 0.1),
-                  onPressed: () { setState(() => _selectedCategory = null); Navigator.pop(ctx); },
+                  label: Text('All',
+                      style: TextStyle(
+                          color: _selectedCategory == null
+                              ? Colors.white
+                              : Colors.white60)),
+                  backgroundColor: _selectedCategory == null
+                      ? const Color(0xFF6366F1)
+                      : Colors.white.withValues(alpha: 0.1),
+                  onPressed: () {
+                    setState(() => _selectedCategory = null);
+                    Navigator.pop(ctx);
+                  },
                 ),
                 ...categories.map((cat) => ActionChip(
-                  label: Text(cat.name, style: TextStyle(color: _selectedCategory == cat.id ? Colors.white : cat.color)),
-                  backgroundColor: _selectedCategory == cat.id ? cat.color : Colors.white.withValues(alpha: 0.1),
-                  onPressed: () { setState(() => _selectedCategory = cat.id); Navigator.pop(ctx); },
-                )),
+                      label: Text(cat.name,
+                          style: TextStyle(
+                              color: _selectedCategory == cat.id
+                                  ? Colors.white
+                                  : cat.color)),
+                      backgroundColor: _selectedCategory == cat.id
+                          ? cat.color
+                          : Colors.white.withValues(alpha: 0.1),
+                      onPressed: () {
+                        setState(() => _selectedCategory = cat.id);
+                        Navigator.pop(ctx);
+                      },
+                    )),
               ],
             ),
             const SizedBox(height: 16),
@@ -192,29 +257,41 @@ class _GamesListScreenState extends State<GamesListScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Sort by', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            const Text('Sort by',
+                style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 16),
             ...['Relevance', 'popular', 'rating', 'players'].map((opt) => ListTile(
-              leading: Icon(
-                opt == 'Relevance' ? Icons.arrow_upward :
-                opt == 'popular' ? Icons.trending_up :
-                opt == 'rating' ? Icons.star : Icons.people,
-                color: Colors.white60,
-              ),
-              title: Text(
-                opt == 'popular' ? 'Most Popular' :
-                opt == 'rating' ? 'Highest Rated' :
-                opt == 'players' ? 'Most Players' : 'Relevance',
-                style: const TextStyle(color: Colors.white),
-              ),
-              trailing: (_sortBy == null && opt == 'Relevance') || _sortBy == opt
-                  ? const Icon(Icons.check, color: Color(0xFFFFD700))
-                  : null,
-              onTap: () {
-                setState(() => _sortBy = opt == 'Relevance' ? null : opt);
-                Navigator.pop(ctx);
-              },
-            )),
+                  leading: Icon(
+                    opt == 'Relevance'
+                        ? Icons.arrow_upward
+                        : opt == 'popular'
+                            ? Icons.trending_up
+                            : opt == 'rating'
+                                ? Icons.star
+                                : Icons.people,
+                    color: Colors.white60,
+                  ),
+                  title: Text(
+                    opt == 'popular'
+                        ? 'Most Popular'
+                        : opt == 'rating'
+                            ? 'Highest Rated'
+                            : opt == 'players'
+                                ? 'Most Players'
+                                : 'Relevance',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  trailing: (_sortBy == null && opt == 'Relevance') ||
+                          _sortBy == opt
+                      ? const Icon(Icons.check, color: Color(0xFFFFD700))
+                      : null,
+                  onTap: () {
+                    setState(
+                        () => _sortBy = opt == 'Relevance' ? null : opt);
+                    Navigator.pop(ctx);
+                  },
+                )),
           ],
         ),
       ),
@@ -228,9 +305,13 @@ class _GamesListScreenState extends State<GamesListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+            Icon(Icons.search_off, size: 64,
+                color: Colors.white.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
-            Text('No games found', style: TextStyle(fontSize: 18, color: Colors.white.withValues(alpha: 0.4))),
+            Text('No games found',
+                style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white.withValues(alpha: 0.4))),
           ],
         ),
       );
@@ -249,6 +330,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
           index: index,
           child: GameCard(
             game: games[index],
+            index: index,
             onTap: () => Navigator.push(
               context,
               PageTransition.slideUp(GameDetailScreen(game: games[index])),

@@ -5,6 +5,9 @@ import '../services/game_service.dart';
 import '../services/haptic_service.dart';
 import '../widgets/game_card.dart';
 import '../widgets/daily_challenge_card.dart';
+import '../widgets/particle_background.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/ui_enhancements.dart';
 import 'game_detail_screen.dart';
 import 'games_list_screen.dart';
 import 'profile_screen.dart';
@@ -49,20 +52,35 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_loaded) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ShimmerLoader(width: 120, height: 120, borderRadius: 60),
+              const SizedBox(height: 20),
+              ShimmerLoader(width: 200, height: 20),
+              const SizedBox(height: 8),
+              ShimmerLoader(width: 160, height: 14),
+            ],
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          const SliverToBoxAdapter(child: DailyChallengeCard()),
-          _buildFeaturedSection(),
-          _buildCategoriesSection(),
-          _buildGamesSection(),
-        ],
+      body: ParticleBackground(
+        color: const Color(0xFF6C5CE7),
+        particleCount: 30,
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(),
+            const SliverToBoxAdapter(child: DailyChallengeCard()),
+            _buildFeaturedSection(),
+            _buildCategoriesSection(),
+            _buildGamesSection(),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNav(0),
     );
@@ -71,88 +89,129 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildAppBar() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 56, 20, 8),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+        padding: const EdgeInsets.fromLTRB(20, 52, 20, 8),
+        child: GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          borderRadius: 18,
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
+                  ),
+                ),
+                child: const Center(
+                  child: Text('GV',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black)),
                 ),
               ),
-              child: const Center(
-                child: Text('GV', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('GameVerse',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withValues(alpha: 0.95))),
+                    Text('Discover & Play',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.4))),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('GameVerse', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('Discover & Play', style: TextStyle(fontSize: 12, color: Colors.white38)),
-              ],
-            ),
-            const Spacer(),
-            _buildIconButton(AudioService().isMuted ? Icons.volume_off : Icons.volume_up, () {
-              AudioService().toggleMute();
-              setState(() {});
-            }),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
+              _buildIconButton(
+                  AudioService().isMuted ? Icons.volume_off : Icons.volume_up,
+                  () {
+                AudioService().toggleMute();
+                setState(() {});
+              }),
+              const SizedBox(width: 6),
+              _buildIconButton(Icons.settings, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, PageTransition.fadeScale(const SettingsScreen()));
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white.withValues(alpha: 0.1),
+                Navigator.push(context,
+                    PageTransition.fadeScale(const SettingsScreen()));
+              }),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  AudioService().play(SoundType.click);
+                  HapticService.light();
+                  Navigator.push(context,
+                      PageTransition.fadeScale(const ShopScreen()));
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color:
+                        const Color(0xFFFFD700).withValues(alpha: 0.15),
+                    border: Border.all(
+                        color: const Color(0xFFFFD700)
+                            .withValues(alpha: 0.3)),
+                  ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.shopping_bag,
+                          color: Color(0xFFFFD700), size: 20),
+                      if (_gameService.coins > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFFFD700),
+                            ),
+                            child: Text(
+                              '${_gameService.coins}',
+                              style: const TextStyle(
+                                fontSize: 7,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                child: Icon(Icons.settings, color: Colors.white.withValues(alpha: 0.7)),
               ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
-                AudioService().play(SoundType.click);
-                HapticService.light();
-                Navigator.push(context, PageTransition.fadeScale(const ShopScreen()));
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.15),
-                  border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  AudioService().play(SoundType.click);
+                  HapticService.light();
+                  Navigator.push(context,
+                      PageTransition.fadeScale(const ProfileScreen()));
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white.withValues(alpha: 0.07),
+                  ),
+                  child: Icon(_gameService.avatarIcon,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      size: 20),
                 ),
-                child: const Icon(Icons.shopping_bag, color: Color(0xFFFFD700)),
               ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
-                AudioService().play(SoundType.click);
-                HapticService.light();
-                Navigator.push(context, PageTransition.fadeScale(const ProfileScreen()));
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-                child: Icon(_gameService.avatarIcon, color: Colors.white.withValues(alpha: 0.7)),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -162,13 +221,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44,
-        height: 44,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white.withValues(alpha: 0.07),
         ),
-        child: Icon(icon, color: Colors.white.withValues(alpha: 0.7)),
+        child:
+            Icon(icon, color: Colors.white.withValues(alpha: 0.6), size: 20),
       ),
     );
   }
@@ -183,17 +243,34 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Row(
               children: [
-                const Text('🔥 Featured', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                AnimatedGradientText(
+                  text: 'Featured',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  colors: const [
+                    Color(0xFFFFD700),
+                    Color(0xFFFF6B6B),
+                    Color(0xFF6C5CE7),
+                  ],
+                ),
                 const Spacer(),
                 TextButton(
-                  onPressed: () {},
-                  child: Text('See All', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13)),
+                  onPressed: () => Navigator.push(
+                    context,
+                    PageTransition.fadeScale(const GamesListScreen()),
+                  ),
+                  child: Text('See All',
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 13)),
                 ),
               ],
             ),
           ),
           SizedBox(
-            height: 170,
+            height: 180,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 20),
@@ -206,7 +283,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     HapticService.light();
                     Navigator.push(
                       context,
-                      PageTransition.slideUp(GameDetailScreen(game: featured[index])),
+                      PageTransition.slideUp(
+                          GameDetailScreen(game: featured[index])),
                     );
                   },
                 );
@@ -225,16 +303,24 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-            child: Text('📂 Categories', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            child: Text('Categories',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white.withValues(alpha: 0.9))),
           ),
           SizedBox(
-            height: 44,
+            height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(left: 20),
               children: [
                 CategoryChip(
-                  category: const GameCategory(id: 'all', name: 'All', icon: Icons.explore, color: Color(0xFF6366F1)),
+                  category: const GameCategory(
+                      id: 'all',
+                      name: 'All',
+                      icon: Icons.explore,
+                      color: Color(0xFF6366F1)),
                   selected: _selectedCategory == null,
                   onTap: () {
                     AudioService().play(SoundType.click);
@@ -280,12 +366,14 @@ class _HomeScreenState extends State<HomeScreen> {
               index: index,
               child: GameCard(
                 game: games[index],
+                index: index,
                 onTap: () {
                   AudioService().play(SoundType.click);
                   HapticService.light();
                   Navigator.push(
                     context,
-                    PageTransition.slideUp(GameDetailScreen(game: games[index])),
+                    PageTransition.slideUp(
+                        GameDetailScreen(game: games[index])),
                   );
                 },
               ),
@@ -300,36 +388,47 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomNav(int currentIndex) {
     return Container(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+        border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
         color: const Color(0xFF0A0A1A),
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(Icons.home_filled, 'Home', true, () {}),
-              _buildNavItem(Icons.grid_view, 'Games', false, () {
+              _buildNavItem(
+                  Icons.home_filled, 'Home', true, () {}, 0),
+              _buildNavItem(
+                  Icons.grid_view, 'Games', false, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, PageTransition.fadeScale(const GamesListScreen()));
-              }),
-              _buildNavItem(Icons.leaderboard, 'Leaderboard', false, () {
+                Navigator.push(
+                    context, PageTransition.fadeScale(const GamesListScreen()));
+              }, 1),
+              _buildNavItem(
+                  Icons.leaderboard, 'Leaderboard', false, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, PageTransition.fadeScale(const LeaderboardScreen()));
-              }),
-              _buildNavItem(Icons.bar_chart, 'Stats', false, () {
+                Navigator.push(
+                    context,
+                    PageTransition.fadeScale(const LeaderboardScreen()));
+              }, 2),
+              _buildNavItem(
+                  Icons.bar_chart, 'Stats', false, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, PageTransition.fadeScale(const StatsScreen()));
-              }),
-              _buildNavItem(Icons.person, 'Profile', false, () {
+                Navigator.push(
+                    context, PageTransition.fadeScale(const StatsScreen()));
+              }, 3),
+              _buildNavItem(
+                  Icons.person, 'Profile', false, () {
                 AudioService().play(SoundType.click);
                 HapticService.light();
-                Navigator.push(context, PageTransition.fadeScale(const ProfileScreen()));
-              }),
+                Navigator.push(
+                    context, PageTransition.fadeScale(const ProfileScreen()));
+              }, 4),
             ],
           ),
         ),
@@ -337,16 +436,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool active, VoidCallback onTap) {
+  Widget _buildNavItem(
+      IconData icon, String label, bool active, VoidCallback onTap, int index) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: active ? const Color(0xFFFFD700) : Colors.white38, size: 24),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 10, color: active ? const Color(0xFFFFD700) : Colors.white38)),
-        ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: active
+              ? const Color(0xFFFFD700).withValues(alpha: 0.12)
+              : Colors.transparent,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                color: active
+                    ? const Color(0xFFFFD700)
+                    : Colors.white.withValues(alpha: 0.35),
+                size: 22),
+            const SizedBox(height: 2),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+                    color: active
+                        ? const Color(0xFFFFD700)
+                        : Colors.white.withValues(alpha: 0.35))),
+          ],
+        ),
       ),
     );
   }

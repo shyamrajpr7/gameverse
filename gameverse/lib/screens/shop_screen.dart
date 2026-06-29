@@ -5,6 +5,8 @@ import '../services/audio_service.dart';
 import '../services/game_service.dart';
 import '../services/haptic_service.dart';
 import '../utils/particle_system.dart';
+import '../widgets/particle_background.dart';
+import '../widgets/glass_card.dart';
 
 class ShopItem {
   final String id;
@@ -118,26 +120,30 @@ class _ShopScreenState extends State<ShopScreen>
     }
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          SliverToBoxAdapter(child: _buildCoinBalance()),
-          SliverToBoxAdapter(child: _buildSectionHeader('Themes', Icons.palette_outlined)),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverToBoxAdapter(
-              child: _buildItemsGrid(shopItems.where((i) => i.category == 'theme').toList()),
+      body: ParticleBackground(
+        color: const Color(0xFFFFD700),
+        particleCount: 20,
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(),
+            SliverToBoxAdapter(child: _buildCoinBalance()),
+            SliverToBoxAdapter(child: _buildSectionHeader('Themes', Icons.palette_outlined)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: _buildItemsGrid(shopItems.where((i) => i.category == 'theme').toList()),
+              ),
             ),
-          ),
-          SliverToBoxAdapter(child: _buildSectionHeader('Snake Skins', Icons.auto_awesome)),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverToBoxAdapter(
-              child: _buildItemsGrid(shopItems.where((i) => i.category == 'snake').toList()),
+            SliverToBoxAdapter(child: _buildSectionHeader('Snake Skins', Icons.auto_awesome)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: _buildItemsGrid(shopItems.where((i) => i.category == 'snake').toList()),
+              ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          ],
+        ),
       ),
     );
   }
@@ -373,49 +379,42 @@ class _ShopItemCardState extends State<_ShopItemCard>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0F23),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _isEquipped
-              ? widget.item.color.withValues(alpha: 0.6)
-              : Colors.white.withValues(alpha: 0.06),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            _buildPreview(),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.item.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      borderRadius: 16,
+      borderColor: _isEquipped
+          ? widget.item.color.withValues(alpha: 0.6)
+          : Colors.white.withValues(alpha: 0.06),
+      child: Row(
+        children: [
+          _buildPreview(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.item.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    widget.item.description,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 12,
-                    ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  widget.item.description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 12,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            _buildActionButton(),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          _buildActionButton(),
+        ],
       ),
     );
   }
