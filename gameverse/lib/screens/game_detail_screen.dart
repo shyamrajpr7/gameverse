@@ -6,6 +6,7 @@ import '../services/haptic_service.dart';
 import '../games/game_player_screen.dart';
 import '../utils/page_transitions.dart';
 import 'multiplayer_setup_screen.dart';
+import 'online_lobby_screen.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final Game game;
@@ -156,6 +157,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             if (_isMultiplayerCompatible) ...[
               const SizedBox(height: 12),
               _buildMultiplayerButton(),
+              const SizedBox(height: 10),
+              _buildOnlineMultiplayerButton(),
             ],
             const SizedBox(height: 24),
             _buildStatsRow(),
@@ -270,6 +273,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     );
   }
 
+  void _playOnlineMultiplayer() {
+    AudioService().play(SoundType.swipe);
+    HapticService.medium();
+    Navigator.push(
+      context,
+      PageTransition.slideUp(OnlineLobbyScreen(game: widget.game)),
+    );
+  }
+
   Widget _buildMultiplayerButton() {
     return SizedBox(
       width: double.infinity,
@@ -277,7 +289,24 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       child: OutlinedButton.icon(
         onPressed: _playMultiplayer,
         icon: const Icon(Icons.people, size: 20),
-        label: const Text('Multiplayer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        label: const Text('Hot-Seat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: widget.game.color,
+          side: BorderSide(color: widget.game.color.withValues(alpha: 0.5)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOnlineMultiplayerButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: _playOnlineMultiplayer,
+        icon: const Icon(Icons.language, size: 20),
+        label: const Text('Online', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         style: OutlinedButton.styleFrom(
           foregroundColor: widget.game.color,
           side: BorderSide(color: widget.game.color.withValues(alpha: 0.5)),
